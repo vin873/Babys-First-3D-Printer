@@ -8,12 +8,15 @@ picked = [(-1, -1), (-1, -1), (-1, -1)]
 browns=[(1125,725),(1125,1275),(1875,725),(1875,1275)]
 yellows=[(775,225),(775,1775),(2225,225),(2225,1775)]
 pinks=[(575,225),(575,1775),(2425,225),(2425,1775)]
-fullness=[0,1,1,1]
+enemies=[(1125,1775),(-1,-1)]
+fullness=[0,0,0,0]
 startPos=(1125,225)
-absAng=45
+currMin=99999
+absAng=0
 currGoal=startPos
 
 def orderDist(currPos,order):
+    global currMin
     currLowestCost = 0
     tempPicked = [(-1, -1), (-1, -1), (-1, -1)]
     tempPos = currPos
@@ -26,11 +29,19 @@ def orderDist(currPos,order):
                 tempPos=c
         currPos=tempPos
         currLowestCost+=closest_dst
+        if currLowestCost>currMin:
+            return 99999,(-1,-1,-1)
+    print(currLowestCost)
+    print(tempPicked)
+    if currLowestCost<currMin:
+        currMin=currLowestCost
     return currLowestCost,tempPicked
 
 def where2go(currPos):
     global picked
+    global currMin
     currLowestCost = 99999
+    currMin=99999
     candis=[]
     for i in [browns, yellows, pinks]:
         if len(i)>0:
@@ -49,8 +60,6 @@ def where2go(currPos):
 # absAng=float(input("theta: "))
 where2go(startPos)
 tAngle = (np.rad2deg(np.arctan2(picked[0][1]-startPos[1],picked[0][0]-startPos[0])) - absAng+360)%360
-print(picked[0])
-print(tAngle)
 tAngles=[]
 for i in range (4):
     if fullness[i] == 0:
@@ -63,3 +72,4 @@ for i in tAngles:
 print(min)
 outAngle=absAng+min
 print(outAngle)
+print(picked)
