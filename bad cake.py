@@ -14,7 +14,7 @@ tempP = []
 got = [0, 0, 0] # brown, yellow, pink
 
 # subscribe each enemy's pose
-enemies = (225, 225)
+enemies = (1125, 1775)
 # subscribe our robots pose
 startPos = (1125, 225)
 
@@ -40,12 +40,25 @@ for target in pinks:
     elif euclidean(startPos, target) > euclidean(enemies, target):
         tempP.append((-1, -1))
 
+if got[0] == 1:
+    tempB = [-1, -1]
+if got[1] == 1:
+    tempY = [-1, -1]
+if got[2] == 1:
+    tempP = [-1, -1]
+
 orders=list(permutations([tempB, tempY, tempP]))
 
 for order in orders:
     for i in order[0]:
         for j in order[1]:
             for k in order[2]:
+                if order[0] == [-1, -1]:
+                    i = startPos
+                if order[1] == [-1, -1]:
+                    j = i
+                if order[2] == [-1, -1]:
+                    k = j
                 tempDis = 0
                 enemyDis = 0
                 if i != (-1, -1) and j != (-1, -1) and k != (-1, -1):
@@ -57,20 +70,19 @@ for order in orders:
                         if tempDis < enemyDis and tempDis < currMin:
                             currMin = tempDis
                             picked = [i, j, k]
+                            for o in order:
+                                if o == [-1, -1]:
+                                    picked.remove(picked[order.index(o)])
+if picked:
+    tAngle = (np.rad2deg(np.arctan2(picked[0][1]-startPos[1], picked[0][0]-startPos[0])) - absAng+360) % 360
+    tAngles = []
+    for i in range(4):
+        if fullness[i] == 0:
+            tAngles.append(tAngle-i*90)
+    for i in tAngles:
+        if abs(i) < abs(minAngle):
+            minAngle = i
+    outAngle = absAng + minAngle
+    print(outAngle)
 
-
-tAngle = (np.rad2deg(np.arctan2(picked[0][1]-startPos[1], picked[0][0]-startPos[0])) - absAng+360) % 360
-
-tAngles = []
-for i in range(4):
-    if fullness[i] == 0:
-        tAngles.append(tAngle-i*90)
-for i in tAngles:
-    if abs(i) < abs(minAngle):
-        minAngle = i
-outAngle = absAng + minAngle
-
-print(outAngle)
 print(picked)
-
-
