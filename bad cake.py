@@ -24,28 +24,38 @@ currMin = [99999, 99999]
 absAng = [0, 0]
 minAngle = [360, 360]
 
-def whatColorGet(pos):
-    if pos in browns:
-        got[0] = 1
-    if pos in yellows:
-        got[1] = 1
-    if pos in pinks:
-        got[2] = 1
+def closerEnemy(target):
+    global enemies
+    speed = 0.9 # enemy/our
+    min = 99999
+    for enemy in enemies:
+        if enemy != (-1, -1):
+           if min > euclidean(enemy, target) / speed:
+               min = euclidean(enemy, target) / speed
+    return min
 
-def closest(pos):
+def whatColorGet(pos, num):
+    if pos in browns:
+        got[num][0] = 1
+    if pos in yellows:
+        got[num][1] = 1
+    if pos in pinks:
+        got[num][2] = 1
+
+def closest(pos, num):
     tempMin = 99999
     tempPicked = ()
-    if got[0] != 1:
+    if got[num][0] != 1:
         for i in browns:
             if tempMin > euclidean(pos, i):
                 tempMin = euclidean(pos, i)
                 tempPicked = i
-    if got[1] != 1:
+    if got[num][1] != 1:
         for i in yellows:
             if tempMin > euclidean(pos, i):
                 tempMin = euclidean(pos, i)
                 tempPicked = i
-    if got[2] != 1:
+    if got[num][2] != 1:
         for i in pinks:
             if tempMin > euclidean(pos, i):
                 tempMin = euclidean(pos, i)
@@ -53,7 +63,7 @@ def closest(pos):
     return tempPicked
 
 def where2go(pos, num):
-    global tempB, tempY, tempP, got, picked, enemies, currMin, fullness, absAng, minAngle
+    global tempB, tempY, tempP, got, picked, enemies, currMin, fullness, absAng, minAngle, used
     tempMin = 99999
     for enemy in enemies:
         if enemy != (-1, -1):
@@ -82,6 +92,7 @@ def where2go(pos, num):
     if got[num][2] == 1:
         tempP = [-1, -1]
 
+    print(tempB, tempY, tempP)
     orders = list(permutations([tempB, tempY, tempP]))
 
     for order in orders:
@@ -97,26 +108,22 @@ def where2go(pos, num):
                     tempDis = 0
                     enemyDis = 0
                     if i != (-1, -1) and j != (-1, -1) and k != (-1, -1):
-                        for enemy in enemies:
-                            if enemy != (-1, -1):
-                                tempDis = euclidean(pos, i) + euclidean(i, j)
-                                enemyDis = euclidean(enemy, j)
-                                if tempDis < enemyDis:
-                                    tempDis += euclidean(j, k)
-                                    enemyDis = euclidean(enemy, k)
-                                    if tempDis < enemyDis and tempDis < tempMin:
-                                        tempMin = tempDis
-                                        picked[num] = [i, j, k]
-                                        for o in order:
-                                            if o == [-1, -1]:
-                                                picked[num].remove(picked[order.index(o)])
+                        tempDis = euclidean(pos, i) + euclidean(i, j)
+                        # print(i, j, k, tempDis)
+                        enemyDis = closerEnemy(j)
+                        if tempDis < enemyDis:
+                            tempDis += euclidean(j, k)
+                            enemyDis = closerEnemy(k)
+                            if tempDis < enemyDis and tempDis < tempMin:
+                                tempMin = tempDis
+                                picked[num] = [i, j, k]
 
     if picked[num] == [(-1, -1), (-1, -1), (-1, -1)]:
         tempPos = pos
         for i in range(3):
-            picked[num][i] = closest(tempPos)
+            picked[num][i] = closest(tempPos, num)
             tempPos = picked[num][i]
-            whatColorGet(picked[num][i])
+            whatColorGet(picked[num][i], num)
 
     if picked[num]:
         tAngle = (np.rad2deg(np.arctan2(picked[num][0][1]-pos[1], picked[num][0][0]-pos[0])) - absAng[num]+360) % 360
@@ -140,15 +147,19 @@ for robot in startPos:
 # print("picked", picked)
 # print("got", got)
 # print("fullness", fullness)
-# print("currMin", currMin)
+print("currMin", currMin)
 # print("absMin", absAng)
 # print("minAngle", minAngle)
 
 if currMin[0] < currMin[1]:
-    used = picked[1]
-    where2go(startPos[1], 1)
-else:
     used = picked[0]
-    where2go(startPos[0], 0)
+    if startPos[1] != (-1, -1):
+        picked[1] = [(-1, -1), (-1, -1), (-1, -1)]
+        where2go(startPos[1], 1)
+else:
+    used = picked[1]
+    if startPos[0] != (-1, -1):
+        picked[0] = [(-1, -1), (-1, -1), (-1, -1)]
+        where2go(startPos[0], 0)
 
-print(picked)
+print("picked", picked)
