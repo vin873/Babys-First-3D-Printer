@@ -19,9 +19,9 @@ for i in range(3):
     tempAllCakes.append([[(-1, -1), (-1, -1), (-1, -1), (-1, -1)], [(-1, -1), (-1, -1), (-1, -1), (-1, -1)]])
 
 # subscribe each enemy's pos
-enemies = [(1125, 1000), (1875, 1775)]
+enemies = [(1125, 1775), (1875, 225)]
 # subscribe our robots pos
-startPos = [(1125, 225), (-1, -1)]
+startPos = [(1125, 225), (1875, 1775)]
 absAng = [0, 0]
 
 picked = [[(-1, -1), (-1, -1), (-1, -1)], [(-1, -1), (-1, -1), (-1, -1)]]
@@ -36,13 +36,27 @@ position = [-1, -1]
 quaternion = Quaternion()
 robotPose = PoseStamped()
 
-pub = rospy.Publisher('/nav_goal', PoseStamped, queue_size=100)
+pub = [rospy.Publisher('/robot1/nav_goal', PoseStamped, queue_size=100), rospy.Publisher('/robot2/nav_goal', PoseStamped, queue_size=100)]
 stop = False
 
 def finishcallback(msg):
     global stop
     stop = msg.data
     print(stop)
+
+def robotPublish(num):
+    global robotPose, pub
+    robotPose.header.frame_id = "/robot" + str(num+1) + "/map"
+    robotPose.header.stamp = rospy.Time.now()
+    robotPose.pose.position.x = position[0]
+    robotPose.pose.position.y = position[1]
+    robotPose.pose.orientation.x = quaternion.x
+    robotPose.pose.orientation.y = quaternion.y
+    robotPose.pose.orientation.z = quaternion.z
+    robotPose.pose.orientation.w = quaternion.w
+    rospy.sleep(0.3)
+    pub[num].publish(robotPose)
+
 
 def euler2quaternion(roll, pitch, yaw):
     """
@@ -233,26 +247,18 @@ def publisher():
         if startPos[robot] != (-1, -1):
             print("robot", robot)
             for pos in range(3):
-                for i in range(2):
-                    position[i] = picked[robot][pos][i] * 0.001
+                for axis in range(2):
+                    position[axis] = picked[robot][pos][axis] * 0.001
+                print(outAngle[robot][pos])
                 quaternion = euler2quaternion(0, 0, outAngle[robot][pos] * math.pi / 180)
+                robotPublish(robot)
+                print(position)
                 print(quaternion)
-
-    robotPose.header.frame_id = "map"
-    robotPose.header.stamp = rospy.Time.now()
-    robotPose.pose.position.x = position[0]
-    robotPose.pose.position.y = position[1]
-    robotPose.pose.orientation.x = quaternion.x
-    robotPose.pose.orientation.y = quaternion.y
-    robotPose.pose.orientation.z = quaternion.z
-    robotPose.pose.orientation.w = quaternion.w
-    
+                rospy.sleep(5)
 
 if __name__=="__main__":
     try:
         publisher()
-        rospy.sleep(0.3)
-        pub.publish(robotPose)
 
     except rospy.ROSInterruptException:
         pass
