@@ -57,7 +57,6 @@ def robotPublish(num):
     rospy.sleep(0.3)
     pub[num].publish(robotPose)
 
-
 def euler2quaternion(roll, pitch, yaw):
     """
     Convert an Euler angle to a quaternion.
