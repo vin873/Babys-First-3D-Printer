@@ -5,14 +5,23 @@
 #include <std_msgs/Int32MultiArray.h>
 #include <std_msgs/Float32.h>
 #include <geometry_msgs/PoseStamped.h>
-#include <geometry_msgs/PointStamped.h>
+#include <geometry_msgs/PoseArray.h>
 
 #include <iostream>
 #include <stdlib.h>
-#include <vector>
 #include <math.h>
 
 using namespace std;
+
+enum MissionOrder
+{
+    CAKE = 0,
+    CHERRY,
+    BASKET,
+    RELEASE,
+    STEAL,
+    HOME
+};
 
 enum Status
 {
@@ -30,14 +39,19 @@ enum Mode
 // Global Variables
 
 int side; // 0 for blue, 1 for green
+int now_Mission = CAKE;
 int now_Status = SETUP;
 int now_Mode = NORMAL;
 int fullness[4] = {0, 0, 0, 0};
 
-double position_x;
-double position_y;
-double orientation_z;
-double orientation_w;
+double myPos_x;
+double myPos_y;
+double myOri_z;
+double myOri_w;
+double enemiesPos_x;
+double enemiesPos_y;
+double enemiesOri_z;
+double enemiesOri_w;
 double startMissionTime;
 double go_home_time;
 
@@ -49,9 +63,7 @@ bool pid_closed = false;
 bool mission_success = false;
 
 geometry_msgs::PoseStamped target;
-geometry_msgs::PointStamped browns[4];
-geometry_msgs::PointStamped yellows[4];
-geometry_msgs::PointStamped pinks[4];
+geometry_msgs::PoseStamped picked[3];
 
 class mainProgram
 {
@@ -61,7 +73,8 @@ public:
     {
         if (msg->data && moving && now_Status > SETUP)
         {
-            
+            ROS_INFO("Mission published !");
+            startMissionTime = ros::Time::now().toSec();
         }
     }
 
@@ -69,7 +82,7 @@ public:
     {
         for (int i = 0;i < 4;i++)
         {
-            fullness[i] = msg->data.at(i)
+            fullness[i] = msg->data.at(i);
         }
     }
 
@@ -85,29 +98,32 @@ public:
         }
     }
 
-    void cake_callback(const geometry_msgs::PointStamped::ConstPtr &msg)
+    void cake_callback(const geometry_msgs::PoseArray::ConstPtr &msg)
     {
-
+        ROS_INFO("Cake !");
     }
 
     void myPos_callback(const geometry_msgs::PoseStamped::ConstPtr &msg)
     {
-        myPos_x = msg->pose.pose.position.x;
-        myPos_y = msg->pose.pose.position.y;
-        myOri_z = msg->pose.pose.orientation.z;
-        myOri_w = msg->pose.pose.orientation.w;
+        myPos_x = msg->pose.position.x;
+        myPos_y = msg->pose.position.y;
+        myOri_z = msg->pose.orientation.z;
+        myOri_w = msg->pose.orientation.w;
     }
 
     void enemiesPos_callback(const geometry_msgs::PoseStamped::ConstPtr &msg)
     {
-        enemiesPos_x = msg->pose.pose.position.x;
-        enemiesPos_y = msg->pose.pose.position.y;
-        enemiesOri_z = msg->pose.pose.orientation.z;
-        enemiesOri_w = msg->pose.pose.orientation.w;
+        enemiesPos_x = msg->pose.position.x;
+        enemiesPos_y = msg->pose.position.y;
+        enemiesOri_z = msg->pose.orientation.z;
+        enemiesOri_w = msg->pose.orientation.w;
     }
     
     ros::NodeHandle nh;
 
+    // main
+    ros::Publisher _better_cake = nh.advertise<std_msgs::Bool>("/cake", 1000);
+    
     // chassis
     ros::Publisher _where2go = nh.advertise<geometry_msgs::PoseStamped>("where2go", 1000);
     ros::Subscriber _finishOrNot = nh.subscribe<std_msgs::Bool>("finishornot", 1000, &mainProgram::nav_callback, this);
@@ -122,12 +138,12 @@ public:
 
     // camera
     ros::Publisher _turnonornot = nh.advertise<std_msgs::Bool>("turnonornot", 1000);
-    ros::Subsciber _cake = nh.advertise<geometry_msgs::PointStamped>("cake", 1000, &mainProgram::cake_callback, this);
+    ros::Subscriber _allCakes = nh.subscribe<geometry_msgs::PoseArray>("all_cakes", 1000, &mainProgram::cake_callback, this);
 
     // locate
     ros::Subscriber _myPos = nh.subscribe<geometry_msgs::PoseStamped>("myPos", 1000, &mainProgram::myPos_callback, this);
     ros::Subscriber _enemiesPos = nh.subscribe<geometry_msgs::PoseStamped>("enemiesPos", 1000, &mainProgram::enemiesPos_callback, this);
-}
+};
 
 int main(int argc, char **argv)
 {
@@ -158,7 +174,14 @@ int main(int argc, char **argv)
                 break;
 
             case RUN:
-
+                if (moving && !doing)
+                {
+                    // Moving to target point
+                }
+                else if (doing && !moving)
+                {
+                    
+                }
                 break;
 
             case FINISH:
