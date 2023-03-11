@@ -25,13 +25,14 @@ for i in range(3):
 # subscribe each enemy's pos
 enemies = [(1125, 1775), (1875, 225)]
 # subscribe our robots pos
-startPos = [(1125, 225), (-1, -1)]
+startPos = [(1875, 1775), (-1, -1)]
 absAng = [0, 0]
 
 picked = [[(-1, -1), (-1, -1), (-1, -1)], [(-1, -1), (-1, -1), (-1, -1)]]
 used = []
 got = [[0, 0, 0], [0, 0, 0]]  # brown, yellow, pink
 fullness = [[0, 0, 0, 0], [0, 0, 0, 0]]
+tempFull = [[0, 0, 0, 0], [0, 0, 0, 0]]
 currMin = [99999, 99999]
 minAngle = 360
 outAngle = [[0, 0, 0], [0, 0, 0]]
@@ -40,7 +41,6 @@ position = [-1, -1]
 quaternion = Quaternion()
 robotPose = PoseArray()
 
-# pub = [rospy.Publisher('/robot1/nav_goal', PoseStamped, queue_size=100), rospy.Publisher('/robot2/nav_goal', PoseStamped, queue_size=100)]
 stop = False
 
 def cake_callback(msg):
@@ -52,10 +52,22 @@ def finish_callback(msg):
     stop = msg.data
     print(stop)
 
-def robotPublish(num, i):
-    global robotPose
+def robotPublish(num, i, color):
+    global robotPose, tempFull
     pub = rospy.Publisher('/cake_picked', PoseArray, queue_size=100)
-    robotPose.header.frame_id = "/robot" + str(num+1) + "/map"
+
+    c = '?'
+    if color == 0:
+        c = 'b'
+    elif color == 1:
+        c = 'y'
+    elif color == 2:
+        c = 'p'
+
+    robotPose.header.frame_id += c
+    for full in tempFull[num]:
+        if full == color+1:
+            robotPose.header.frame_id += str(tempFull[num].index(full))
     robotPose.header.stamp = rospy.Time.now()
 
     pose = Pose()
@@ -207,14 +219,14 @@ def where2go(pos, num):
     if picked[num]:
         anglePos = pos
         tempAng = list(absAng)
-        tempFull = list(fullness[num])
+        tempFull[num] = list(fullness[num])
         for j in range(3):
             minAngle = 360
             minAngleNum = -1
             tAngle = (np.rad2deg(np.arctan2(picked[num][j][1] - anglePos[1], picked[num][j][0] - anglePos[0])) - absAng[num] + 360) % 360
             tAngles = [360, 360, 360, 360]
             for i in range(4):
-                if tempFull[i] == 0:
+                if tempFull[num][i] == 0:
                     tAngles[i] = (tAngle - i * 90 - tempAng[num] + 360) % 360
                     if tAngles[i] > 180:
                         tAngles[i] -= 360
@@ -225,7 +237,7 @@ def where2go(pos, num):
             outAngle[num][j] = minAngle + tempAng[num]
             # print(outAngle[num], tempAng[num], tAngles, minAngle, tAngle)
             tempAng[num] = outAngle[num][j]
-            tempFull[minAngleNum] = 1
+            tempFull[num][minAngleNum] = j+1
             anglePos = picked[num][j]
 
     currMin[num] = tempMin
@@ -237,6 +249,7 @@ def listener():
 
 def publisher():
     global quaternion, stop
+    color = -1
     rospy.Subscriber("/finishornot", Bool, finish_callback)
 
     if enemies[0] == (-1, -1) and enemies[1] == (-1, -1):
@@ -261,16 +274,14 @@ def publisher():
 
     for robot in range(2):
         if startPos[robot] != (-1, -1):
-            # print("robot", robot)
             for pos in range(3):
-                for axis in range(2):
+                for axis in range(2):                    
+                    for i in range(3):
+                        if picked[robot][pos] in allCakes[i]:
+                            color = i
                     position[axis] = picked[robot][pos][axis] * 0.001
-                # print(outAngle[robot][pos])
                 quaternion = euler2quaternion(0, 0, outAngle[robot][pos] * math.pi / 180)
-                # print(position)
-                # print(quaternion)
-                robotPublish(robot, pos)
-
+                robotPublish(robot, pos, color)
     stop = False
 
 if __name__=="__main__":
@@ -279,25 +290,3 @@ if __name__=="__main__":
 
     except rospy.ROSInterruptException:
         pass
-
-
-# print("outAngle", outAngle)
-# print("picked", picked)
-
-# for robot in picked:
-#     print("robot" + str(picked.index(robot)) + " : ")
-#     for target in robot:
-#         for i in range(3):
-#             if target in allCakes[i]:
-#                 print('[' + str(i) + ']' + '[' + str(allCakes[i].index(target)) + ']')
-
-# print("got", got)
-# print("fullness", fullness)
-# print("currMin", currMin)
-# print("absMin", absAng)
-# print("minAngle", minAngle)
-
-# Test1 = [startPos[0], pinks[0], yellows[0], browns[1]]
-# Test2 = [startPos[0], yellows[0], pinks[0], browns[1]]
-# print(howLong(Test1))
-# print(howLong(Test2))
