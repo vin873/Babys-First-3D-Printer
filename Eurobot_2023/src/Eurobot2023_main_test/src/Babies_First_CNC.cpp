@@ -61,6 +61,7 @@ bool start = false;
 bool moving = false;
 bool doing = false;
 bool arrived = false;
+bool mission_success = false;
 bool got_cake_picked = false;
 bool got_cherry_picked = false;
 bool finish_mission = false;
@@ -136,6 +137,7 @@ public:
         doing = false;
         if (msg->data.at(0))
         {
+            mission_success = true;
             ROS_INFO("Mission finished!");
         }
         else
@@ -184,8 +186,6 @@ public:
     ros::Publisher _first_cherry = nh.advertise<std_msgs::Bool>("cherry", 1000);
     ros::Subscriber _cake_picked = nh.subscribe<geometry_msgs::PoseArray>("cake_picked", 1000, &mainProgram::pcake_callback, this);
     ros::Subscriber _cherry_picked = nh.subscribe<geometry_msgs::PoseStamped>("cherry_picked", 1000, &mainProgram::pcherry_callback, this);
-    ros::Publisher _test_cake = nh.advertise<geometry_msgs::PoseStamped>("test_cake", 1000);
-    ros::Publisher _test_cherry = nh.advertise<geometry_msgs::PoseStamped>("test_cherry", 1000);
 
     // chassis
     ros::Publisher _where2go = nh.advertise<geometry_msgs::PoseStamped>("where2go", 1000);
@@ -249,7 +249,12 @@ int main(int argc, char **argv)
                 break;
 
             case RUN:
-                // ROS_INFO("RUN");
+                if (!printOnce)
+                {
+                    ROS_INFO("RUN");
+                }
+                printOnce = true;
+
                 switch (now_Mission)
                 {
                 case CAKE:
@@ -260,32 +265,34 @@ int main(int argc, char **argv)
                     }
                     if (got_cake_picked)
                     {
-                        if ((!moving || arrived) && !doing)
+                        if (!moving && !doing)
                         {
-                            ROS_INFO("%d %d %d", int(moving), int(arrived), int(doing));
-                            if (arrived)
+                            if (!arrived && !mission_success)
                             {
+                                missionStr.data = id[2*cakeNum];
+                                missionStr.data += id[2*cakeNum+1];
+                                mainClass._mission.publish(missionStr);
+
+                                mainClass._where2go.publish(missionStr);
+                                moving = true;
+                            }
+                            else if (arrived)
+                            {
+                                arrived = false;
                                 missionStr.data.at(0) = 'c';
                                 mainClass._mission.publish(missionStr);
                                 doing = true;
-                                arrived = false;
                             }
-                            if (!doing)
+                            else if (mission_success)
                             {
-                                if (cakeNum == 3)
+                                mission_success = false;
+                                if (cakeNum < 2)
                                 {
-                                    cakeNum == 0;
-                                    now_Mission = CHERRY;
+                                    cakeNum++;
                                 }
                                 else
                                 {
-                                    missionStr.data = id[2*cakeNum];
-                                    missionStr.data += id[2*cakeNum+1];                     
-                                    mainClass._mission.publish(missionStr);
-
-                                    mainClass._where2go.publish(cake_picked[cakeNum]);
-                                    moving = true;
-                                    cakeNum++;
+                                    now_Mission = CHERRY;
                                 }
                             }
                         }
@@ -300,8 +307,26 @@ int main(int argc, char **argv)
                     }
                     if (got_cherry_picked)
                     {   
-                        mainClass._test_cherry.publish(cherry_picked);
-                        now_Mission = BASKET;
+                        if (!moving && !doing)
+                        {
+                            if (!arrived && !mission_success)
+                            {
+                                mainClass._where2go.publish(cherry_picked);
+                                moving = true;
+                            }
+                            else if (arrived)
+                            {
+                                arrived = false;
+                                missionStr.data = "s0";
+                                mainClass._mission.publish(missionStr);
+                                doing = true;
+                            }
+                            else if (mission_success)
+                            {
+                                mission_success = false;
+                                now_Mission = BASKET;
+                            }
+                        }
                     }
                     break;
 
@@ -319,6 +344,7 @@ int main(int argc, char **argv)
                 
                 case HOME:
                     now_Status = FINISH;
+                    printOnce = false;
                     break;
                 }
                 break;
