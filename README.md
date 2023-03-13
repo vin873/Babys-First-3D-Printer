@@ -24,4 +24,4 @@
     rostopic echo /mission
 
 ### echo chassis
-    rostopiv echo /wherego
+    rostopic echo /wherego
