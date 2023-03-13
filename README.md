@@ -15,3 +15,6 @@
 
     rostopic pub -1 /startornot std_msgs/Bool true
     
+### arrive
+
+    rostopic pub -1 /finishornot std_msgs/Bool true
