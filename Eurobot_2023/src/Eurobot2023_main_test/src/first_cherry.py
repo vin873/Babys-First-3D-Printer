@@ -21,7 +21,7 @@ picked = [(-1, -1), (-1, -1)]
 
 def cherryPublish():
     global robotPose, picked
-    pub = rospy.Publisher('/cherry_picked', PoseStamped, queue_size=100)
+    pub = rospy.Publisher('/cherry_picked', PoseStamped, queue_size=1000)
     for i in picked:
         if i != (-1, -1):
             robotPose.header.frame_id = "/robot" + str(picked.index(i)+1) + "/map"
@@ -53,6 +53,7 @@ def where2suck(pos):
 def listener():
     rospy.init_node("first_cherry")
     rospy.Subscriber("/cherry", Bool, cherry_callback)
+    rospy.Subscriber("/cherryExistence", Bool, cherry_callback)
     rospy.spin()
 
 def publisher():

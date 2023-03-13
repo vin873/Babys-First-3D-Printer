@@ -47,14 +47,9 @@ def cake_callback(msg):
     if msg.data:
         publisher()
 
-def finish_callback(msg):
-    global stop
-    stop = msg.data
-    print(stop)
-
 def robotPublish(num, i, color):
     global robotPose, tempFull
-    pub = rospy.Publisher('/cake_picked', PoseArray, queue_size=100)
+    pub = rospy.Publisher('/cake_picked', PoseArray, queue_size=1000)
 
     c = '?'
     if color == 0:
@@ -250,7 +245,6 @@ def listener():
 def publisher():
     global quaternion, stop
     color = -1
-    rospy.Subscriber("/finishornot", Bool, finish_callback)
 
     if enemies[0] == (-1, -1) and enemies[1] == (-1, -1):
         enemies[0] = (99999, 99999)
