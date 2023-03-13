@@ -18,3 +18,8 @@
 ### arrive
 
     rostopic pub -1 /finishornot std_msgs/Bool true
+
+### mission finish
+
+    cd src/Eurobot2023_main_test/src/
+    python3 test_pub.py 
