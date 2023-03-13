@@ -13,6 +13,5 @@
 
 ### start
 
-    source devel/setup.bash
     rostopic pub -1 /startornot std_msgs/Bool true
     
