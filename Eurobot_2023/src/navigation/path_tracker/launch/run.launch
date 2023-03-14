@@ -1,0 +1,29 @@
+<launch>
+    
+    <!-- dp -->
+    <node pkg="rosserial_server" type="serial_node" name="rosserial_server_dp" output="screen">
+      <param name="port" value="/dev/ttyAMA0" />
+      <param name="baud" value="115200" />
+      <rosparam>
+          require:
+              publishers: [ Toposition ]
+              subscribers: [ cmd_vel ]
+      </rosparam>
+    </node>
+
+    <!-- path_Tracker -->
+    <node name="path_tracker" pkg="robot_navigation" type="pathTracker" output="screen">
+    <!-- <node name="path_tracker" pkg="robot_navigation" type="pathTracker_main" output="screen"> -->
+    <!-- <node name="path_tracker" pkg="robot_navigation" type="pathTracker_main_vl53" output="screen"> -->
+        <rosparam file="$(find robot_navigation)/params/pathTracker_yellow.yaml" command="load" /> 
+    </node>
+
+    <!-- lidar localization -->
+    <include file="$(find eurobot)/launch/localization/lidar_G6.launch"/>  
+    <!-- localization -->
+    <!-- <include file="$(find eurobot_localization)/launch/ekf_fullstate.launch"/> -->
+    <include file="$(find eurobot_localization)/launch/ekf_fullstate_new.launch"/>
+
+</launch>
+
+

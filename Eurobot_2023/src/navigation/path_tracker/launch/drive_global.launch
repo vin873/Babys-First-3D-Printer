@@ -1,0 +1,41 @@
+<launch>
+
+    <param name="use_sim_time" value="false"/>
+
+    <!-- choose map_files -->
+    <arg name="map_file" default="$(find robot_navigation)/maps/2023_map/basic_map.yaml"/>
+
+
+    <!-- Run the map server -->
+    <node name="map_server" pkg="map_server" type="map_server" args="$(arg map_file)" />
+
+    <!-- rviz -->
+    <node type="rviz" name="jingrviz" pkg="rviz" args="-d $(find robot_navigation)/rviz/drive_global.rviz" />
+
+    <!-- gloabol planner -->
+    <!-- <node pkg="move_base" type="move_base" respawn="false" name="move_base" output="screen">
+      <param name="base_global_planner" value="global_planner/GlobalPlanner"/>
+      <rosparam file="$(find robot_navigation)/params/costmap_common_params.yaml" command="load" ns="global_costmap" />
+      <rosparam file="$(find robot_navigation)/params/costmap_common_params.yaml" command="load" ns="local_costmap" />
+      <rosparam file="$(find robot_navigation)/params/local_costmap_param.yaml" command="load" />
+      <rosparam file="$(find robot_navigation)/params/global_costmap_param.yaml" command="load" />
+    </node> -->
+
+    <!-- <node name="baselink_basefootprint" pkg="tf2_ros" type="static_transform_publisher" args="0 0 0 0 0 0 1 base_footprint base_link"/> -->
+
+    <!-- pure_pursuit -->
+    <!-- <node pkg="robot_navigation" type="Holomonic_controller.py" name="pure_pursuit" output="screen" /> -->
+    <!-- <node pkg="robot_navigation" type="Holomonic_controller_goal.py" name="pure_pursuit" output="screen" /> -->
+    <!-- <node pkg="robot_navigation" type="Holomonic_controller_timer.py" name="pure_pursuit_timer" output="screen"/> -->
+    <!-- <node pkg="robot_navigation" type="Holomonic_controller_goal.py" name="pure_pursuit_goal" output="screen"/> -->
+    <!-- <node name="path_tracker" pkg="robot_navigation" type="pathTracker" output="screen">
+        <rosparam file="$(find robot_navigation)/params/pathTracker.yaml" command="load" />
+    </node> -->
+
+    <!-- rosserial -->
+    <!-- <node pkg="rosserial_python" type="serial_node.py" name="serial_node" output="screen" >
+      <param name="port" value="/dev/USB1" />
+      <param name="baud" value="115200" />
+    </node> -->
+    
+</launch>

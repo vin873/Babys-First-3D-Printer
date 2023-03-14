@@ -1,0 +1,7 @@
+<launch>
+  <!-- obstale-simulation -->
+  <node name="obs_position" pkg="obstacle_simulation" type="obs_position" output="screen">
+      <rosparam file="$(find obstacle_simulation)/config/params.yaml" command="load"/> 
+  </node>
+
+</launch>
