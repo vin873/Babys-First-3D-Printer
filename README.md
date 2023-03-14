@@ -23,5 +23,5 @@
 ### echo mission
     rostopic echo /mission
 
-### echo chassis (with some trouble)
+### echo chassis
     rostopic echo /wherego
