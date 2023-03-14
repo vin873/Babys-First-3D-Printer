@@ -1,0 +1,13 @@
+<launch>
+
+    <node name="Rival_Sim_input" pkg="teleop_twist_keyboard" type="teleop_twist_keyboard.py" args="_speed:=0.3" output="screen">
+        <!-- args="_key_timeout:=0.5" -->
+        <remap from="cmd_vel" to="RivalVel"/>
+    </node>
+
+    <node pkg="path_layer" type="Rival_Sim_main" name="Rival_Sim_main" output="screen">
+        <param name="RivalNum" type="int" value="1"/>
+        <param name="UpdateFrequency" type="int" value="15"/>
+    </node>
+
+</launch>
