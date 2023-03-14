@@ -39,7 +39,7 @@ enum Mode
 // Global Variables
 
 int side = 0; // 0 for blue, 1 for green
-int robot = 0; // 0 for big, 1 for small
+int robot = 1; // 0 for big, 1 for small
 int cakeNum = 0;
 int now_Mission = CAKE;
 int now_Status = SETUP;

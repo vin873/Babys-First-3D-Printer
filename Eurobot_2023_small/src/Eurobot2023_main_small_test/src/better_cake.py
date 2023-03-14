@@ -25,7 +25,7 @@ for i in range(3):
 # subscribe each enemy's pos
 enemies = [(1125, 1775), (1875, 225)]
 # subscribe our robots pos
-startPos = [(1125, 225), (-1, -1)]
+startPos = [(-1, -1), (1875, 1775)]
 absAng = [0, 0]
 
 picked = [[(-1, -1), (-1, -1), (-1, -1)], [(-1, -1), (-1, -1), (-1, -1)]]
@@ -239,7 +239,7 @@ def where2go(pos, num):
 
 def listener():
     rospy.init_node("better_cake")
-    rospy.Subscriber("/cake0", Bool, cake_callback)
+    rospy.Subscriber("/cake1", Bool, cake_callback)
     rospy.spin()
 
 def publisher():

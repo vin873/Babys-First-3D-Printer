@@ -1,0 +1,7 @@
+<launch>
+
+  <node name="better_cake_small" pkg="Eurobot2023_main_small_test" type="better_cake.py" output="screen" />
+  <node name="first_cherry_small" pkg="Eurobot2023_main_small_test" type="first_cherry.py" output="screen" />
+  <node name="main_small" pkg="Eurobot2023_main_small_test" respawn="false" type="Babies_First_CNC" output="screen" />
+  
+</launch>
