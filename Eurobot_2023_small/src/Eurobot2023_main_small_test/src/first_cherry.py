@@ -6,7 +6,7 @@ from geometry_msgs.msg import PoseStamped
 import numpy as np
 from scipy.spatial.distance import euclidean
 
-cherries = [[(0, 1000), (300, 1000)], [(1350, 1985), (1650, 1985)], [(2700, 1000), (3000, 1000)], [(1350, 15), (1650, 15)]]
+cherries = [[(100, 900), (300, 900)], [(1350, 1885), (1650, 1885)], [(2700, 900), (2900, 900)], [(1350, 115), (1650, 115)]]
 
 # subscribe cherries’ existence
 cherry = [1, 1, 1, 1]

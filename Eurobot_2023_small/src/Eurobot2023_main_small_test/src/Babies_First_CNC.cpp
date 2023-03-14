@@ -38,8 +38,12 @@ enum Mode
 
 // Global Variables
 
-int side = 0; // 0 for blue, 1 for green
+int side = 1; // 0 for blue, 1 for green
 int robot = 1; // 0 for big, 1 for small
+int number0 = 0;
+int *n0 = &number0;
+int number1 = 1;
+int *n1 = &number1;
 int cakeNum = 0;
 int now_Mission = CAKE;
 int now_Status = SETUP;
@@ -63,6 +67,7 @@ bool start = false;
 bool moving = false;
 bool doing = false;
 bool arrived = false;
+bool route_failed = false;
 bool mission_success = false;
 bool got_cake_picked = false;
 bool got_cherry_picked = false;
@@ -73,7 +78,7 @@ bool plates[5] = {0, 0, 0, 0}; // x y
 bool printOnce = false;
 
 string id;
-string id_frame = "/robot" + to_string(robot+1) + "/map";
+string id_frame;
 
 std_msgs::Bool cake;
 std_msgs::Bool cherry;
@@ -82,6 +87,7 @@ std_msgs::String missionStr;
 geometry_msgs::PoseStamped cake_picked[3];
 geometry_msgs::PoseStamped cherry_picked;
 geometry_msgs::PoseStamped basket_point[2];
+geometry_msgs::PoseStamped home;
 
 class mainProgram
 {
@@ -219,12 +225,13 @@ int main(int argc, char **argv)
     // ROS initial
     ros::init(argc, argv, "Babies_First_CNC");
 
-    // Node Handling Class Initializeposition
     mainProgram mainClass;
-    ros::Time initialTime = ros::Time::now();
-    std_msgs::Float32 timePublish;
-    std_msgs::Int32 pointPublish;
 
+    mainClass.nh.getParam("robot", robot);
+    mainClass.nh.getParam("side", side);
+
+    ros::Time initialTime = ros::Time::now();
+    
     // Main Node Update Frequency
     ros::Rate rate(20);
 
@@ -239,16 +246,15 @@ int main(int argc, char **argv)
                 if (!printOnce)
                 {
                     ROS_INFO("SETUP");
+
                 }
                 printOnce = true;
                 cake.data = false;
                 cherry.data = false;
 
                 mainClass.poseStamped_set(basket_point[0], 0.225, 0.225, 0, 1);
-                mainClass.poseStamped_set(basket_point[1], 0.225, 1.775, 0, 1);
-
-                mainClass.nh.getParam("side", side);
-                mainClass.nh.getParam("go_home_time", go_home_time);
+                mainClass.poseStamped_set(basket_point[1], 0.430, 1.775, 0, 1);
+                mainClass.poseStamped_set(home, 1.125, 0.430, 0, 1);
 
                 if (start)
                 {
@@ -269,9 +275,9 @@ int main(int argc, char **argv)
                 {
                 case CAKE:
 
-                    mission_timeOut = 5;
+                    mission_timeOut = 1;
                     driving_timeOut = 20;
-
+                    
                     if (ros::Time::now().toSec() - initialTime.toSec() >= go_home_time && !going_home)
                     {
                         now_Mission = HOME;
@@ -286,7 +292,19 @@ int main(int argc, char **argv)
                     {
                         if (!moving && !doing)
                         {
-                            if (!arrived && !mission_success)
+                            if (route_failed)
+                            {
+                                route_failed = false;
+                                if (cakeNum < 2)
+                                {
+                                    cakeNum++;
+                                }
+                                else
+                                {
+                                    now_Mission = CHERRY;
+                                }
+                            }
+                            else if (!arrived && !mission_success)
                             {
                                 missionStr.data = id[2*cakeNum];
                                 missionStr.data += id[2*cakeNum+1];
@@ -357,7 +375,7 @@ int main(int argc, char **argv)
                 
                 case CHERRY:
                     
-                    mission_timeOut = 20;
+                    mission_timeOut = 5;
                     driving_timeOut = 20;
                     if (ros::Time::now().toSec() - initialTime.toSec() >= go_home_time && !going_home)
                     {
@@ -371,7 +389,13 @@ int main(int argc, char **argv)
                     }
                     else if (got_cherry_picked)
                     {   
-                        if (!moving && !doing)
+                        
+                        if (route_failed)
+                            {
+                                route_failed = false;
+                                now_Mission = BASKET;
+                            }
+                        else if (!moving && !doing)
                         {
                             if (!arrived && !mission_success)
                             {
@@ -418,7 +442,7 @@ int main(int argc, char **argv)
 
                 case BASKET:
                     
-                    mission_timeOut = 20;
+                    mission_timeOut = 5;
                     driving_timeOut = 20;
                     if (ros::Time::now().toSec() - initialTime.toSec() >= go_home_time && !going_home)
                     {
@@ -427,7 +451,12 @@ int main(int argc, char **argv)
                     }
                     else if (!moving && !doing)
                     {
-                        if (!arrived && !mission_success)
+                        if (route_failed)
+                            {
+                                route_failed = false;
+                                now_Mission = RELEASE;
+                            }
+                        else if (!arrived && !mission_success)
                         {
                             mainClass._where2go.publish(basket_point[side]);
                             ROS_INFO("Heading over to x:[%.3f] y:[%.3f]", basket_point[side].pose.position.x, basket_point[side].pose.position.y);
@@ -479,6 +508,8 @@ int main(int argc, char **argv)
                 
                 case HOME:
                     going_home = true;
+                    mainClass._where2go.publish(home);
+                    ROS_INFO("Heading over to x:[%.3f] y:[%.3f]", home.pose.position.x, home.pose.position.y);
                     now_Status = FINISH;
                     printOnce = false;
                     break;
