@@ -38,7 +38,7 @@ enum Mode
 
 // Global Variables
 
-int side; // 0 for blue, 1 for green
+int side = 1; // 0 for blue, 1 for green
 int robot = 0; // 0 for big, 1 for small
 int number0 = 0;
 int *n0 = &number0;
@@ -87,6 +87,7 @@ std_msgs::String missionStr;
 geometry_msgs::PoseStamped cake_picked[3];
 geometry_msgs::PoseStamped cherry_picked;
 geometry_msgs::PoseStamped basket_point[2];
+geometry_msgs::PoseStamped home;
 
 class mainProgram
 {
@@ -252,7 +253,8 @@ int main(int argc, char **argv)
                 cherry.data = false;
 
                 mainClass.poseStamped_set(basket_point[0], 0.225, 0.225, 0, 1);
-                mainClass.poseStamped_set(basket_point[1], 0.225, 1.775, 0, 1);
+                mainClass.poseStamped_set(basket_point[1], 0.020, 1.775, 0, 1);
+                mainClass.poseStamped_set(home, 1.125, 0.020, 0, 1);
 
                 if (start)
                 {
@@ -273,7 +275,7 @@ int main(int argc, char **argv)
                 {
                 case CAKE:
 
-                    mission_timeOut = 20;
+                    mission_timeOut = 1;
                     driving_timeOut = 20;
                     
                     if (ros::Time::now().toSec() - initialTime.toSec() >= go_home_time && !going_home)
@@ -373,7 +375,7 @@ int main(int argc, char **argv)
                 
                 case CHERRY:
                     
-                    mission_timeOut = 20;
+                    mission_timeOut = 5;
                     driving_timeOut = 20;
                     if (ros::Time::now().toSec() - initialTime.toSec() >= go_home_time && !going_home)
                     {
@@ -440,7 +442,7 @@ int main(int argc, char **argv)
 
                 case BASKET:
                     
-                    mission_timeOut = 20;
+                    mission_timeOut = 5;
                     driving_timeOut = 20;
                     if (ros::Time::now().toSec() - initialTime.toSec() >= go_home_time && !going_home)
                     {
@@ -506,6 +508,8 @@ int main(int argc, char **argv)
                 
                 case HOME:
                     going_home = true;
+                    mainClass._where2go.publish(home);
+                    ROS_INFO("Heading over to x:[%.3f] y:[%.3f]", home.pose.position.x, home.pose.position.y);
                     now_Status = FINISH;
                     printOnce = false;
                     break;
