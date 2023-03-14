@@ -1,0 +1,10 @@
+# image: 2023_map_grad_res02.png
+image: 2023_map_grad.png
+# image: basic_map_horiz.png
+# resolution: 0.02 # meters / pixel
+resolution: 0.01 # meters / pixel
+origin: [-0.02, -0.02, 0.0] # (x, y, yaw)
+negate: 0 
+occupied_thresh: 0.99 # greater
+free_thresh: 0.01 # smaller
+mode: scale # trinary, scale, raw 
