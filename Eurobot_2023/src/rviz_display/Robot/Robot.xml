@@ -1,0 +1,37 @@
+<robot name="robot">
+    
+    <link name="base"> </link>  
+
+    <link name="robot_Large">        
+        <visual>
+            <!-- robot frame -->
+            <origin rpy="0 0 0" xyz="0 0 0"/>
+            <geometry>
+                <mesh filename="package://rviz_display/Robot/Robot_Large/Robot_Large.obj"/>
+            </geometry>
+        </visual>
+    </link>
+
+    <link name="robot_Small">        
+        <visual>
+            <!-- robot frame -->
+            <origin rpy="0 0 0" xyz="0 0 0"/>
+            <geometry>
+                <mesh filename="package://rviz_display/Robot/Robot_Small/Robot_Small.obj"/>
+            </geometry>
+        </visual>
+    </link>
+
+
+    <joint name = "Large_to_base" type="continuous">
+        <parent link="base" />
+        <child link="robot_Large" />
+    </joint>
+
+    <joint name = "Small_to_base" type="continuous">
+        <parent link="base" />
+        <child link="robot_Small" />
+    </joint>
+
+
+</robot>

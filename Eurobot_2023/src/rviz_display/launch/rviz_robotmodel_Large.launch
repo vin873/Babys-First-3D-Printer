@@ -1,0 +1,14 @@
+<launch>
+
+    <arg name="model" />
+    <param name = "robot_description" textfile = "$(find robot_example)/Robot/Robot_Large.xml" />
+    <param name="use_gui" value="true"/>
+
+    <node name="robot_Large_state_publisherLarge" pkg="robot_state_publisher" type="robot_state_publisher" />
+
+    <!-- <node type="rviz" name="jingrviz" pkg="rviz" args="-d $(find stage_simulation)/rviz/robot_model.rviz" /> -->
+    
+    <arg name="use_static_tf" default="true" />
+    <node pkg="tf" type="static_transform_publisher" name="robot_Large_broadcaster" args="0.012 -0.011 0 0 0 1.57 map robot_Large 30" if="$(arg use_static_tf)" />
+
+</launch>

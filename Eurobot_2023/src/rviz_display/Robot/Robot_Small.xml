@@ -1,0 +1,12 @@
+<robot name="robot_Small">
+
+    <link name="robot_Small">        
+        <visual>
+            <origin rpy="1.57 0 0" xyz="1.0 1.0 0"/>
+            <geometry>
+                <mesh filename="package://rviz_display/Robot_Small/Robot_Small.obj"/>
+            </geometry>
+        </visual>
+    </link>
+
+</robot>

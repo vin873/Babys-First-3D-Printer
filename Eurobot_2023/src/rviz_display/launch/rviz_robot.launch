@@ -1,0 +1,23 @@
+<launch>
+
+    <arg name="model" />    
+    <param name="use_gui" value="true"/>
+
+    <node name="robot_Large_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" />
+    <node name="robot_Small_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" />
+    
+    <param name = "robot_description" textfile = "$(find rviz_display)/Robot/Robot.xml" />
+
+    <arg name="use_static_tf" default="true" />
+    <node pkg="tf" type="static_transform_publisher" name="base_broadcaster" args="0 0 0 0 0 0 map base 30" if="$(arg use_static_tf)" />
+    <!-- <node pkg="tf" type="static_transform_publisher" name="robot_Large_broadcaster" args="0.012 -0.011 0 0 0 1.57 base robot_Large 30" if="$(arg use_static_tf)" /> -->
+    <!-- <node pkg="tf" type="static_transform_publisher" name="robot_Small_broadcaster" args="-0.016 -0.13 0.052 0 0 0 base robot_Small 30" if="$(arg use_static_tf)" /> -->
+
+    <!-- <node name="pub_initial_tf" pkg="rviz_display" type="pub_initial_tf" /> -->
+    <!-- <node name="L_pub_robot_tf" pkg="rviz_display" type="L_pub_robot_tf" output="screen" /> -->
+    <!-- <node name="S_pub_robot_tf" pkg="rviz_display" type="S_pub_robot_tf" output="screen" /> -->
+    <node name="pub_robot_tf" pkg="rviz_display" type="pub_robot_tf" output="screen" />
+
+    <!-- <node type="rviz" name="jingrviz" pkg="rviz" args="-d $(find stage_simulation)/rviz/robot_model.rviz" /> -->
+
+</launch>

@@ -1,0 +1,29 @@
+<package>
+  <name>rviz_camera_stream</name>
+  <version>1.0.1</version>
+  <description>
+    Publish a camera view as rendered by rviz on an Image topic
+  </description>
+
+  <maintainer email="wsacul@gmail.com">Lucas Walter</maintainer>
+  <author email="tbd@tbd.com">Mikhail Medvedev</author>
+
+  <license>BSD</license>
+
+  <url type="website">https://github.com/lucasw/rviz_camera_stream</url>
+
+  <buildtool_depend>catkin</buildtool_depend>
+  <build_depend>image_transport</build_depend>
+  <build_depend>roscpp</build_depend>
+  <build_depend>roslint</build_depend>
+  <build_depend>rviz</build_depend>
+  <build_depend>sensor_msgs</build_depend>
+
+  <run_depend>roscpp</run_depend>
+  <run_depend>rviz</run_depend>
+  <run_depend>tf</run_depend>
+
+  <export>
+      <rviz plugin="${prefix}/plugin_description.xml"/>
+  </export>
+</package>

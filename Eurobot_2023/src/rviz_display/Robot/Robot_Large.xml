@@ -1,0 +1,12 @@
+<robot name="robot_Large">
+
+    <link name="robot_Large">        
+        <visual>
+            <origin rpy="0 0 0" xyz="0 0 0"/>
+            <geometry>
+                <mesh filename="package://rviz_display/Robot/Robot_Large/Robot_Large.obj"/>
+            </geometry>
+        </visual>
+    </link>
+
+</robot>
