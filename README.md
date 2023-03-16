@@ -34,3 +34,15 @@
 
 ## 3.Start
     rostopic pub -1 /startornot std_msgs/Bool true
+    
+## 4.Difference
+
+big
+    mainClass.poseStamped_set(basket_point[0], 0.225, 0.225, 0, 1);
+    mainClass.poseStamped_set(basket_point[1], 0.020, 1.775, 0, 1);
+    mainClass.poseStamped_set(home, 1.125, 0.020, 0, 1);
+     
+small
+    mainClass.poseStamped_set(basket_point[0], 0.225, 0.225, 0, 1);
+    mainClass.poseStamped_set(basket_point[1], 0.420, 1.775, 0, 1);
+    mainClass.poseStamped_set(home, 1.125, 0.420, 0, 1);
