@@ -9,7 +9,7 @@ done = Int32MultiArray()
 
 def publisher():
     rospy.init_node("test_pub")
-    pub = rospy.Publisher('/donefullness', Int32MultiArray, queue_size=1000)
+    pub = rospy.Publisher('/donefullness0', Int32MultiArray, queue_size=1000)
     arr = [1, 1 , 1, 1, 1]
     done.data = arr
     rospy.sleep(0.6)
