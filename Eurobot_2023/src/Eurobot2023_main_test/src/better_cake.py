@@ -309,6 +309,7 @@ def publisher():
 
     if startPos[robotNum] != [-1, -1]:
         robotPose.poses=[]
+        robotPose.header.frame_id = ''
         for pos in range(3):
             for axis in range(2):                    
                 for i in range(3):
@@ -317,7 +318,7 @@ def publisher():
                 position[axis] = picked[robotNum][pos][axis] * 0.001
             quaternion = euler2quaternion(0, 0, outAngle[robotNum][pos] * math.pi / 180)
             robotPublish(robotNum, pos, color)
-            # print(picked)
+        # print(picked)
 
     stop = False
 
