@@ -106,7 +106,6 @@ def publisher():
             pickedSide[0] = where2suck(startPos[0], 0)
         
     cherryPublish()
-    print(pickedSide)
 
 if __name__=="__main__":
     try:
