@@ -3,11 +3,13 @@
 #include <opencv2/highgui/highgui.hpp>
 #include <cv_bridge/cv_bridge.h>
 #include <sensor_msgs/image_encodings.h>
-
-std::string pic_path = "/home/fear/Eurobot_2023/src/rviz_display/maps/eueu_map/eurobot_table.png";
+#include <ros/package.h>
+std::string pic_path = "";
 
 int main(int argc, char **argv)
 {
+    pic_path=ros::package::getPath("rviz_display");
+    pic_path+="/maps/eueu_map/eurobot_table.png";
     ros::init(argc, argv, "publish_image");
     ros::NodeHandle nh;
 
