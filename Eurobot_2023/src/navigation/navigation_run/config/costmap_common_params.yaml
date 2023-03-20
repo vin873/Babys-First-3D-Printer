@@ -1,0 +1,97 @@
+  #rangle settings
+  obstacle_range: 3 #lidar range
+  raytrace_range: 3 #clear the overlapped obstacles on the path, only for the obstacle layer
+
+  #hexagonal footprint
+  # footprint: [[0,0.15],[0.1299,0.075],[0.1299,-0.075],[0,-0.15],[-0.1299,-0.075],[-0.1299,0.075]]
+  robot_radius: 0.15
+  #tf
+  global_frame: map
+  robot_base_frame: base_footprint
+
+  #map info
+  map_topic: map
+  subscribe_to_updates: true
+  update_frequency: 20.0  #frequency to update costmap
+  publish_frequency: 10.0 #frequency to publish the new costmap to Rviz
+
+  plugins:
+  # ... first layer  
+    - {name: static_layer, type: "costmap_2d::StaticLayer"} 
+    # - {name: obstacle_layer, type: "costmap_2d::ObstacleLayer"} 
+  # ... my own plugins   
+    # - {name: simple_layer, type: "simple_layer_namespace::GridLayer"}   
+    # - {name: simple_layer, type: "simple_layer_namespace::SimpleLayer"}  
+    - {name: path_layer, type: "path_layer_namespace::PathLayer"}   
+    # - {name: lidar_obstacle_layer, type: "lidar_obstacle_layer_namespace::LidarObstacleLayer"} 
+  # ... final layer
+    # # - {name: inflation_layer, type: "costmap_2d::InflationLayer"}
+    
+
+  static_layer:
+    enabled: true
+    map_topic: map
+    subscribe_to_updates: false
+    trinary_costmap: false
+
+  # obstacle_layer:
+  #   enabled: true
+  #   observation_sources: laser_scan_sensor
+  #   laser_scan_sensor: {sensor_frame: laser_frame, data_type: LaserScan, topic: scan, marking: true, clearing: true}
+
+  # lidar_obstacle_layer:
+  #   enabled: true
+  #   obstacle_topic: obstacles_to_map #test
+  #   obstacle_radius: 3
+  #   expand_division: 30 #total points of the expanded profile
+
+  simple_layer:
+    enabled: true
+    observation_sources: 
+      camera: true
+      tracker: false
+      lidar: false
+                // setCost(mx, my, cost);
+
+    update_frequency: 1.0
+    inflation_radius: 0.25
+    inscribed_radius: 0.06
+    cost_factor: 13.0
+    tolerance: 
+      sample: 0.07
+      rival: 0.15
+
+    filter:
+      enabled: true  # if disabled, the obstacles' pos always refresh
+      # arguments below work IFF filter/enabled = true
+      quiescence: true
+      beta: 0.2 # the weight/dependence of new obstacles' pos
+      fixed_point_remove: true
+      threshold_time: 1 # unit: seconds
+
+  path_layer:
+    enabled: true
+
+    # Inflation
+    enabled_Inflation: true
+    CostScalingFactor: 10
+    InscribedRadius: 0.15 # Unit: m
+    InflationRadius: 0.35 # Unit: m (MaxDistance)
+
+    # Topic 
+    RobotPath_TopicName: /robot2/move_base/GlobalPlanner/plan
+    RivalOdom1_TopicName: /RivalOdom_1
+    RivalOdom2_TopicName: /RivalOdom_2
+    
+    # Timeout -1 -> Disable Timeout 
+    RobotPath_Timeout: -1
+    RivalOdom_Timeout: 0.5
+    
+    # Predict Length
+    RobotPath_PredictLength: 50 # Unit: none
+    RivalOdom_PredictLength: 0 # Unit: ms
+
+  inflation_layer:
+    enabled: true
+    cost_scaling_factor: 10
+    inflation_radius: 0.3

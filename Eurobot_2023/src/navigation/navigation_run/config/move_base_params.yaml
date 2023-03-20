@@ -1,0 +1,61 @@
+# Move base node parameters. For full documentation of the parameters in this file, please see
+#
+# http://www.ros.org/wiki/move_base
+#
+shutdown_costmaps: false  #當move_base進入inactive狀態時候，決定是否停用節點的costmap
+
+controller_frequency: 3.0 #向基座發送速度控制指令頻率
+controller_patience: 2.0  #在空間清理操作執行前，控制器會等待多長時間（秒）用來找出一個有效控制。
+
+
+planner_frequency: 1.0 #全局路徑規劃器loop速率。如果設置這個爲0.0, 當收到新目標點或者局部路徑規劃器報告路徑不通時候全局路徑規劃器才啓動
+planner_patience: 5.0  #等待有效新路徑，超時時間
+
+oscillation_timeout: 10.0 #執行修復操作之前，允許的震盪時間是幾秒。 值0意味着永不超時
+oscillation_distance: 0.2 #機器人需要移動多少距離纔算作沒有震盪。 移動完畢後重置定時器計入參數~oscillation_timeout
+
+
+# local planner - default is trajectory rollout
+# base_local_planner: "teb_local_planner/TebLocalPlannerROS"
+# base_local_planner: "base_local_planner/TrajectoryPlannerROS"
+# base_local_planner: "eband_local_planner/EBandPlannerROS"
+
+# base_global_planner: "global_planner/GlobalPlanner"
+base_global_planner: "global_planner/GlobalPlanner"
+#alternatives: navfn/NavfnROS global_planner/GlobalPlanner, carrot_planner/CarrotPlanner
+
+
+# We plan to integrate recovery behaviors for turtlebot but currently those belong to gopher and still have to be adapted.
+## recovery behaviors; we avoid spinning, but we need a fall-back replanning
+recovery_behavior_enabled: false
+
+#recovery_behaviors:
+  #- name: 'super_conservative_reset1'
+    #type: 'clear_costmap_recovery/ClearCostmapRecovery'
+  #- name: 'conservative_reset1'
+    #type: 'clear_costmap_recovery/ClearCostmapRecovery'
+  #- name: 'aggressive_reset1'
+    #type: 'clear_costmap_recovery/ClearCostmapRecovery'
+  #- name: 'clearing_rotation1'
+    #type: 'rotate_recovery/RotateRecovery'
+  #- name: 'super_conservative_reset2'
+    #type: 'clear_costmap_recovery/ClearCostmapRecovery'
+  #- name: 'conservative_reset2'
+    #type: 'clear_costmap_recovery/ClearCostmapRecovery'
+  #- name: 'aggressive_reset2'
+    #type: 'clear_costmap_recovery/ClearCostmapRecovery'
+  #- name: 'clearing_rotation2'
+    #type: 'rotate_recovery/RotateRecovery'
+
+#super_conservative_reset1:
+  #reset_distance: 3.0
+#conservative_reset1:
+  #reset_distance: 1.5
+#aggressive_reset1:
+  #reset_distance: 0.0
+#super_conservative_reset2:
+  #reset_distance: 3.0
+#conservative_reset2:
+  #reset_distance: 1.5
+#aggressive_reset2:
+  #reset_distance: 0.0

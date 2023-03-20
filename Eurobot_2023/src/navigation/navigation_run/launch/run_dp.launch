@@ -1,0 +1,15 @@
+<launch>
+    <!-- dp -->
+        <node pkg="rosserial_server" type="serial_node" name="rosserial_server_dp" output="screen">
+            <param name="port" value="/dev/ttyAMA0" />
+            <param name="baud" value="115200" />
+            <!-- <remap from="/cmd_vel" to="/robot1/cmd_vel"/> -->
+            <rosparam>
+                require:
+                    publishers: [ Toposition ]
+                    subscribers: [ cmd_vel ]
+            </rosparam>
+        </node>
+    <include file="$(find eurobot)/launch/localization/lidar_G6.launch"/>
+    <include file="$(find eurobot_localization)/launch/ekf_fullstate_new.launch"/>
+</launch>

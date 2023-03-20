@@ -1,0 +1,161 @@
+TrajectoryPlannerROS:
+  max_vel_x: 0.3
+  min_vel_x: 0.01
+  max_vel_theta: 1
+  min_vel_theta: -1
+  min_in_place_vel_theta: 1
+
+  acc_lim_theta: 0.5
+  acc_lim_x: 0.25
+  # acc_lim_Y: 0.25
+
+  holonomic_robot: false
+
+  meter_scoring: true
+
+  xy_goal_tolerance: 0.03
+  yaw_goal_tolerance: 0.1
+  heading_lookahead: 0.05
+
+  publish_cost_grid_pc: true
+  sim_time: 0.8
+  path_distance_bias: 0.8
+  goal_distance_bias: 0.1
+  occdist_scale: 0.0
+
+EBandPlannerROS:
+  # common parameters
+  xy_goal_tolerance: 0.03
+  yaw_goal_tolerance: 0.05
+  rot_stopper_vel: 0.01
+  trans_stopped_vel: 0.01
+  
+  # visualization parameters
+  marker_lifetime: 0.5
+
+  # Elastic Band Parameters
+  eband_min_relative_overlap: 0.1
+  eband_tiny_bubble_distance: 0.01
+  eband_tiny_bubble_expansion: 0.01
+  eband_internal_force_gain: 0.01
+  eband_external_force_gain: 10
+  num_iterations_eband_optimization: 5
+  eband_equilibrium_approx_max_recursion_depth: 4
+  eband_equilibrium_relative_overshoot: 0
+  eband_significant_force_lower_bound: 0.15
+  costmap_weight: 10
+  
+  # controller parameters
+  max_vel_lin: 0.6
+  min_vel_lin: 0
+  max_vel_th: 1.5
+  min_vel_th: 0
+  min_in_place_vel_th: 0
+  in_place_trans_vel: 0
+  k_prop: 4
+  k_damp: 6
+  Ctrl_Rate: 15
+  max_acceleration: 1
+  virtual_mass: 0.75
+  max_translational_acceleration: 1
+  max_rotational_acceleration: 1.5
+  rotation_correction_threshold: 0.5
+  differential_drive: False
+  bubble_velocity_multiplier: 2
+  rotation_threshold_multiplier: 1
+  disallow_hysteresis: False
+
+
+TebLocalPlannerROS:
+
+  odom_topic: odom
+  map_frame: odom
+    
+  # Trajectory
+
+  teb_autosize: True
+  dt_ref: 0.3
+  dt_hysteresis: 0.03
+  global_plan_overwrite_orientation: true
+  allow_init_with_backwards_motion: true
+  max_global_plan_lookahead_dist: 0.3 
+  feasibility_check_no_poses: 5
+  free_goal_vel: False
+
+  # via point
+  global_plan_viapoint_sep: 100
+
+  via_points_ordered: True
+
+  # Robot
+
+  max_vel_x: 0.5
+  max_vel_y: 0.5
+  max_vel_x_backwards: 5
+  max_vel_theta: 1.5
+  acc_lim_x: 0.4
+  acc_lim_y: 0.4
+  acc_lim_theta: 1
+  min_turning_radius: 0
+  footprint_model: # types: "point", "circular", "two_circles", "line", "polygon"
+    type: "circular"
+    radius: 0.15 # for type "circular"
+    line_start: [-0.3, 0.0] # for type "line"
+    line_end: [0.3, 0.0] # for type "line"
+    front_offset: 0.2 # for type "two_circles"
+    front_radius: 0.2 # for type "two_circles"
+    rear_offset: 0.2 # for type "two_circles"
+    rear_radius: 0.2 # for type "two_circles"
+    vertices: [ [0.06, 0.135],  [-0.075, 0.135], [-0.075, -0.135], [0.06, -0.135] ] # for type "polygon"
+
+  # GoalTolerance
+    
+  xy_goal_tolerance: 0.05
+  yaw_goal_tolerance: 0.05
+  free_goal_vel: False
+    
+  # Obstacles
+    
+  min_obstacle_dist: 0.05
+  include_costmap_obstacles: False
+  costmap_obstacles_behind_robot_dist: 0.05
+  obstacle_poses_affected: 30
+  costmap_converter_plugin: ""
+  costmap_converter_spin_thread: True
+  costmap_converter_rate: 5
+
+  # Optimization
+    
+  no_inner_iterations: 5
+  no_outer_iterations: 4
+  optimization_activate: True
+  optimization_verbose: False
+  penalty_epsilon: 0.5
+  weight_max_vel_x: 2
+  weight_max_vel_y: 2
+  weight_max_vel_theta: 1
+  weight_acc_lim_x: 1
+  weight_acc_lim_y: 1
+  weight_acc_lim_theta: 0.5
+  weight_kinematics_nh: 1
+  weight_kinematics_forward_drive: -1000
+  weight_kinematics_turning_radius: 0
+  weight_optimaltime: 20
+  weight_obstacle: 0
+  weight_dynamic_obstacle: 10 # not in use yet
+  weight_viapoint: 100
+  alternative_time_cost: False # not in use yet
+
+  # Homotopy Class Planner
+
+  enable_homotopy_class_planning: False
+  enable_multithreading: True
+  simple_exploration: False
+  max_number_classes: 4
+  roadmap_graph_no_samples: 15
+  roadmap_graph_area_width: 5
+  h_signature_prescaler: 0.5
+  h_signature_threshold: 0.1
+  obstacle_keypoint_offset: 0.1
+  obstacle_heading_threshold: 0.45
+  visualize_hc_graph: False

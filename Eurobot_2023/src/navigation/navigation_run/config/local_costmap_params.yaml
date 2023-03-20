@@ -1,0 +1,24 @@
+local_costmap:
+  update_frequency: 0.0
+  publish_frequency: 0.0
+  transform_tolerance: 0.2
+  static_map: false
+  rolling_window: false
+  width: 1.0
+  height: 1.0
+  resolution: 0.01
+
+  static_layer:
+    enabled: false
+
+  obstacle_layer:
+    enabled: false
+
+  lidar_obstacle_layer:
+    enabled: false
+
+  simple_layer:
+    enabled: false
+
+  path_layer:
+    enabled: false

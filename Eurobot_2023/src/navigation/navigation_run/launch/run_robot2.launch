@@ -1,0 +1,57 @@
+<launch>
+    <!-- robot2 -->
+    <group ns="robot2">
+
+        <!-- Map File -->
+        <arg name="map_file" default="$(find map_server)/mytest/basic_map.yaml"/>
+        
+        <!-- Map Server -->
+        <!-- Publish: /map, /map_metadata -->
+        <node pkg="map_server" name="map_server" type="map_server" args="$(arg map_file)"/>
+
+        <!-- Move Base Node -->
+        <!-- Subscribe: /move_base_simple/goal -->
+        <!-- Publish: /cmd_vel -->
+        <node pkg="move_base" type="move_base" respawn="false" name="move_base" output="screen">
+          <remap from="cmd_vel" to ="vel_obseleted" /> <!--when using pathTracker, needed to remap cmd_vel to another topic name-->
+          <rosparam file="$(find navigation_run)/config/costmap_common_params.yaml" command="load" ns="global_costmap" />
+          <rosparam file="$(find navigation_run)/config/costmap_common_params.yaml" command="load" ns="local_costmap" />
+          <!-- <rosparam file="$(find navigation_run)/config/local_costmap_params.yaml" command="load" /> -->
+          <rosparam file="$(find navigation_run)/config/global_costmap_params.yaml" command="load"  />
+
+          <!-- <rosparam file="$(find navigation_run)/config/base_local_planner_params.yaml" command="load" /> -->
+          <rosparam file="$(find navigation_run)/config/global_planner_params.yaml" command="load" />
+          <rosparam file="$(find navigation_run)/config/move_base_params.yaml" command="load" />
+        </node>
+
+        <!-- path_Tracker -->
+        <node name="path_tracker" pkg="path_tracker" type="pathTracker" output="screen">
+            <remap from="cmd_vel" to="raw_cmd_vel"/>
+            <rosparam file="$(find path_tracker)/params/pathTracker_test.yaml" command="load" /> 
+        </node>
+
+        <!-- obstacle_simulation.launch -->
+        <!-- <include file="$(find obstacle_simulation)/launch/obstacle_simulation.launch"> -->
+        <!-- </include> -->
+
+        <!-- dp -->
+        <!-- <node pkg="rosserial_server" type="serial_node" name="rosserial_server_dp" output="screen">
+            <param name="port" value="/dev/ttyAMA0" />
+            <param name="baud" value="115200" /> -->
+            <!-- <remap from="/cmd_vel" to="/robot1/cmd_vel"/> -->
+            <!-- <rosparam>
+                require:
+                    publishers: [ Toposition ]
+                    subscribers: [ cmd_vel ]
+            </rosparam>
+        </node>
+
+        <include file="$(find eurobot)/launch/localization/lidar_G6.launch"/>
+        <include file="$(find eurobot_localization)/launch/ekf_fullstate_new.launch"/> -->
+        
+        <!-- low pass filter on cmd_vel -->
+        <node pkg="lpf" type="vel_lpf" name="vel_lpf">
+        </node>
+
+    </group>    
+</launch>
