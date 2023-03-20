@@ -42,9 +42,13 @@ big
     mainClass.poseStamped_set(basket_point[0], 0.225, 0.225, 0, 1);
     mainClass.poseStamped_set(basket_point[1], 0.020, 1.775, 0, 1);
     mainClass.poseStamped_set(home, 1.125, 0.020, 0, 1);
+    
+    ang = (45 - i*90) * math.pi / 180
      
 small
 
     mainClass.poseStamped_set(basket_point[0], 0.225, 0.225, 0, 1);
     mainClass.poseStamped_set(basket_point[1], 0.420, 1.775, 0, 1);
     mainClass.poseStamped_set(home, 1.125, 0.420, 0, 1);
+    
+    ang = (225 - i*90) * math.pi / 180
