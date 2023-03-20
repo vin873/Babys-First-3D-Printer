@@ -13,7 +13,7 @@ from scipy.spatial.distance import euclidean
 from geometry_msgs.msg import Quaternion
 import math
 
-point = [[0.225, 1.775], [3.775, 0.225]]
+point = [[0.225, 1.775], [2.775, 0.225]]
 
 # subscribe each enemy's pos
 enemies = [[1125, 1775], [1875, 225]]
@@ -26,7 +26,7 @@ fullness = [0, 0, 0, 0]
 
 ang = 0
 robotAng = Quaternion()
-robotPose = PoseStamped()
+robotPose = PoseArray()
 
 def mission_callback(msg):
     for i in range(4):
@@ -84,7 +84,7 @@ def startPos1_callback(msg):
     absAng[0] = quaternion2euler(msg.pose.pose.orientation.x, msg.pose.pose.orientation.y, msg.pose.pose.orientation.z, msg.pose.pose.orientation.w)
 
 def startPos2_callback(msg):
-    global startPos
+    global startPos, absAng
     startPos[1][0] = msg.pose.pose.position.x * 1000
     startPos[1][1] = msg.pose.pose.position.y * 1000
     absAng[1] = quaternion2euler(msg.pose.pose.orientation.x, msg.pose.pose.orientation.y, msg.pose.pose.orientation.z, msg.pose.pose.orientation.w)
@@ -98,21 +98,26 @@ def listener():
     rospy.spin()
 
 def publisher():
-    pub = rospy.Publisher('/robot'+str(robotNum+1)+"/nav_goal", PoseStamped, queue_size=1000)
+    pub = rospy.Publisher('/release_point'+str(robotNum), PoseArray, queue_size=1000)
     for i in range(4):
         if fullness[i] == 0:
-            ang = (225 - i*90) * math.pi / 180
+            ang = (45 - i*90) * math.pi / 180
             break
     robotAng = euler2quaternion(0, 0, ang)
-    robotPose.header.frame_id = "/robot" + str(robotNum+1) + "/map"
-    robotPose.header.stamp = rospy.Time.now()
-    robotPose.pose.position.x = point[robotNum][0] * 0.001
-    robotPose.pose.position.y = point[robotNum][1] * 0.001
-    robotPose.pose.orientation.x = robotAng.x
-    robotPose.pose.orientation.y = robotAng.y
-    robotPose.pose.orientation.z = robotAng.z
-    robotPose.pose.orientation.w = robotAng.w
 
+    robotPose.header.frame_id = "robot" + str(robotNum+1) + "/map"
+    robotPose.header.stamp = rospy.Time.now()
+
+    for j in range(4):
+        pose = Pose()
+        pose.position.x = point[robotNum][0]
+        pose.position.y = point[robotNum][1]
+        pose.orientation.x = robotAng.x
+        pose.orientation.y = robotAng.y
+        pose.orientation.z = robotAng.z
+        pose.orientation.w = robotAng.w
+        robotPose.poses.insert(0, pose)
+    rospy.sleep(0.5)
     pub.publish(robotPose)
     
 

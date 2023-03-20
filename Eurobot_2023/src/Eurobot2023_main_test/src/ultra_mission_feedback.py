@@ -23,14 +23,14 @@ def mission_callback(msg):
         arr[0] = 1
     elif msg.data[0] == 'c' or msg.data[0] == 's':
         arr[0] = 1
-        publisher(1)
+        publisher(0.3)
     elif msg.data[0] == 'o':
         # arr[int(msg.data[1])+1] = 0
         arr[0] = 1
-        publisher(1)
+        publisher(0.3)
     elif msg.data[0] == 'v' or msg.data[0] == 'u':
         arr[0] = 1
-        publisher(5)
+        publisher(0.3)
 
 def startPos1_callback(msg):
     global startPos, absAng
@@ -41,7 +41,6 @@ def startPos2_callback(msg):
     global startPos
     startPos[1][0] = msg.pose.pose.position.x * 1000
     startPos[1][1] = msg.pose.pose.position.y * 1000
-
 
 def listener():
     rospy.init_node("ultra_mission_feedback")

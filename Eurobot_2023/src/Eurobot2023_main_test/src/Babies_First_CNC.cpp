@@ -7,7 +7,6 @@
 #include <geometry_msgs/PoseStamped.h>
 #include <nav_msgs/Odometry.h>
 #include <geometry_msgs/PoseArray.h>
-#include <tf/transform_datatypes.h>
 
 #include <iostream>
 #include <stdlib.h>
@@ -71,13 +70,14 @@ bool route_failed = false;
 bool mission_success = false;
 bool got_cake_picked = false;
 bool got_cherry_picked = false;
+bool got_release_point = false;
 bool going_home = false;
 bool fullness[4] = {0, 0, 0, 0}; // {0, 90, 180, 270}
 bool plates[5] = {0, 0, 0, 0}; // x y
 bool printOnce = false;
 
 string id;
-string id_frame;
+string id_frame  = "robot"+to_string(robot+1)+"/map";
 
 std_msgs::Bool cake;
 std_msgs::Bool cherry;
@@ -88,7 +88,7 @@ std_msgs::String missionStr;
 geometry_msgs::PoseStamped cake_picked[3];
 geometry_msgs::PoseStamped cherry_picked[2];
 geometry_msgs::PoseStamped basket_point[2];
-geometry_msgs::PoseStamped release_point[2];
+geometry_msgs::PoseStamped release_point[4];
 geometry_msgs::PoseStamped home;
 
 class mainProgram
@@ -126,6 +126,16 @@ public:
         }
         got_cherry_picked = true;
         // ROS_INFO("cherry_picked got!");
+    }
+
+    void release_callback(const geometry_msgs::PoseArray::ConstPtr &msg)
+    {
+        for (int i = 0;i < 4;i++)
+        {
+            poseStamped_set(release_point[i], msg->poses[i].position.x, msg->poses[i].position.y, msg->poses[i].orientation.z, msg->poses[i].orientation.w);
+        }
+        got_release_point = true;
+        // ROS_INFO("release_point got!");
     }
 
     void finishall_callback(const std_msgs::Bool::ConstPtr &msg)
@@ -209,6 +219,7 @@ public:
     ros::Publisher _ifinish = nh.advertise<std_msgs::Bool>("finishall", 1000);
     ros::Subscriber _cake_picked = nh.subscribe<geometry_msgs::PoseArray>("cake_picked"+to_string(robot), 1000, &mainProgram::pcake_callback, this);
     ros::Subscriber _cherry_picked = nh.subscribe<geometry_msgs::PoseArray>("cherry_picked"+to_string(robot), 1000, &mainProgram::pcherry_callback, this);
+    ros::Subscriber _release_point = nh.subscribe<geometry_msgs::PoseArray>("release_point"+to_string(robot), 1000, &mainProgram::release_callback, this);
     ros::Subscriber _finishall = nh.subscribe<std_msgs::Bool>("finishall", 1000, &mainProgram::finishall_callback, this);
 
     // chassis
@@ -270,11 +281,6 @@ int main(int argc, char **argv)
                     mainClass.poseStamped_set(basket_point[0], 0.225, 0.225, 0, 1);
                     mainClass.poseStamped_set(basket_point[1], 0.020, 1.775, 0, 1);
                     mainClass.poseStamped_set(home, 1.125, 0.020, 0, 1);
-
-                    mainClass.poseStamped_set(release_point[0], 0.225, 1.775, 0, 1);
-                    mainClass.poseStamped_set(release_point[1], 3.775, 0.225, 0, 1);
-
-                    
                 }
                 printOnce = true;
 
@@ -295,7 +301,6 @@ int main(int argc, char **argv)
                 {
                     initialTime = ros::Time::now();
                     ROS_WARN("RUN");
-                    ROS_INFO("%s",id.c_str());
                 }
                 printOnce = true;
 
@@ -547,73 +552,75 @@ int main(int argc, char **argv)
 
                     mission_timeOut = 10;
                     driving_timeOut = 20;
-                    ROS_INFO("fullness : %d %d %d %d", fullness[0], fullness[1], fullness[2], fullness[3]);
-                    now_Mission = STEAL;
-                    // if (gotCake == 3)
-                    // {
-                    //     release.data = true;
-                    //     mainClass._release.publish(release);
-                    // }
 
-                    // if (ros::Time::now().toSec() - initialTime.toSec() >= go_home_time && !going_home)
-                    // {
-                    //     now_Mission = HOME;
-                    //     ROS_INFO("===== Time to Go Home !!! =====");
-                    // }
-                    // else if (!moving && !doing)
-                    // {
-                    //     if (route_failed)
-                    //     {
-                    //         route_failed = false;
-                    //         now_Mission = STEAL;
-                    //     }
-                    //     else if (!arrived && !mission_success)
-                    //     {
-                    //         mainClass._where2go.publish(release_point[robot]);
-                    //         ROS_INFO("Heading over to x:[%.3f] y:[%.3f]", release_point[robot].pose.position.x, release_point[robot].pose.position.y);
-                    //         moving = true;
-                    //         startDriveTime = ros::Time::now().toSec();
-                    //     }
-                    //     else if (arrived)
-                    //     {
-                    //         arrived = false;
-                    //         missionStr.data = "o0";
-                    //         mainClass._mission.publish(missionStr);
-                    //         ROS_INFO("Mission [%s] published!", missionStr.data.c_str());
-                    //         doing = true;
-                    //         startMissionTime = ros::Time::now().toSec();
-                    //     }
-                    //     else if (mission_success)
-                    //     {
-                    //         mission_success = false;
-                    //         if (gotCake > 0)
-                    //         {
-                    //             gotCake--;
-                    //         }
-                    //         else
-                    //         {
-                    //             now_Mission = STEAL;
-                    //         }
-                    //     }
-                    // }
-                    // else if (moving && ros::Time::now().toSec() - startDriveTime >= driving_timeOut)
-                    // {
-                    //     moving = false;
-                    //     doing = false;
-                    //     arrived = false;
-                    //     mission_success = false;
-                    //     ROS_WARN("===== Can't reach x:[%.3f] y:[%.3f]! =====", release_point[robot].pose.position.x, release_point[robot].pose.position.y);
-                    //     now_Mission = STEAL;
-                    // }
-                    // else if (doing && ros::Time::now().toSec() - startMissionTime >= mission_timeOut)
-                    // {
-                    //     moving = false;
-                    //     doing = false;
-                    //     arrived = false;
-                    //     mission_success = false;
-                    //     ROS_WARN("===== Mission [%s] overtime! =====", missionStr.data.c_str());
-                    //     now_Mission = STEAL;
-                    // } 
+                    if (ros::Time::now().toSec() - initialTime.toSec() >= go_home_time && !going_home)
+                    {
+                        now_Mission = HOME;
+                        ROS_INFO("===== Time to Go Home !!! =====");
+                    }
+                    else if (!release.data)
+                    {
+                        release.data = true;
+                        mainClass._release.publish(release);
+                        ROS_INFO("fullness : %d %d %d %d", fullness[0], fullness[1], fullness[2], fullness[3]);
+                    }
+                    else if (got_release_point)
+                    {
+                        if (!moving && !doing)
+                        {
+                            if (route_failed)
+                            {
+                                route_failed = false;
+                                now_Mission = STEAL;
+                            }
+                            else if (!arrived && !mission_success)
+                            {
+                                mainClass._where2go.publish(release_point[gotCake]);
+                                ROS_INFO("Heading over to x:[%.3f] y:[%.3f]", release_point[gotCake].pose.position.x, release_point[gotCake].pose.position.y);
+                                moving = true;
+                                startDriveTime = ros::Time::now().toSec();
+                            }
+                            else if (arrived)
+                            {
+                                arrived = false;
+                                missionStr.data = "o0";
+                                mainClass._mission.publish(missionStr);
+                                ROS_INFO("Mission [%s] published!", missionStr.data.c_str());
+                                doing = true;
+                                startMissionTime = ros::Time::now().toSec();
+                            }
+                            else if (mission_success)
+                            {
+                                mission_success = false;
+                                if (gotCake > 0)
+                                {
+                                    gotCake--;
+                                }
+                                else
+                                {
+                                    now_Mission = STEAL;
+                                }
+                            }
+                        }
+                    }
+                    else if (moving && ros::Time::now().toSec() - startDriveTime >= driving_timeOut)
+                    {
+                        moving = false;
+                        doing = false;
+                        arrived = false;
+                        mission_success = false;
+                        ROS_WARN("===== Can't reach x:[%.3f] y:[%.3f]! =====", release_point[robot].pose.position.x, release_point[robot].pose.position.y);
+                        now_Mission = STEAL;
+                    }
+                    else if (doing && ros::Time::now().toSec() - startMissionTime >= mission_timeOut)
+                    {
+                        moving = false;
+                        doing = false;
+                        arrived = false;
+                        mission_success = false;
+                        ROS_WARN("===== Mission [%s] overtime! =====", missionStr.data.c_str());
+                        now_Mission = STEAL;
+                    } 
                     break;
 
                 case STEAL:
