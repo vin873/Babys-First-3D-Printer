@@ -3,7 +3,6 @@
 ## 1.Big
 
 ### catkin_make
-    roscore
     cd Eurobot_2023/
     source devel/setup.bash
     catkin_make
@@ -15,7 +14,6 @@
 ## 2.Small
 
 ### catkin_make
-    roscore
     cd Eurobot_2023_small/
     source devel/setup.bash
     catkin_make
