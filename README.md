@@ -11,10 +11,6 @@
 ### roslaunch
     source devel/setup.bash
     roslaunch Eurobot2023_main_test main.launch
-
-### mission finish
-    cd src/Eurobot2023_main_test/src/
-    python3 test_pub.py 
     
 ## 2.Small
 
@@ -27,10 +23,6 @@
 ### roslaunch
     source devel/setup.bash
     roslaunch Eurobot2023_main_small_test main.launch
-
-### mission finish
-    cd src/Eurobot2023_main_small_test/src/
-    python3 test_pub.py 
 
 ## 3.Start
     rostopic pub -1 /startornot std_msgs/Bool true
