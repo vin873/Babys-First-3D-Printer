@@ -6,6 +6,7 @@ from nav_msgs.msg import Odometry
 from geometry_msgs.msg import Pose
 from geometry_msgs.msg import PoseStamped
 from geometry_msgs.msg import Quaternion
+from std_msgs.msg import Int32
 from std_msgs.msg import Int32MultiArray
 from geometry_msgs.msg import PoseArray
 import numpy as np
@@ -13,7 +14,7 @@ from scipy.spatial.distance import euclidean
 from geometry_msgs.msg import Quaternion
 import math
 
-point = [[0.225, 1.775], [2.775, 0.225]]
+point = [[2.775, 0.225, 225], [0.225, 1.775, 45]]
 
 # subscribe each enemy's pos
 enemies = [[1125, 1775], [1875, 225]]
@@ -33,8 +34,7 @@ def mission_callback(msg):
         fullness[i] = msg.data[i+1]
 
 def release_callback(msg):
-    if msg.data:
-        publisher()
+    publisher(msg.data-1)
 
 def euler2quaternion(roll, pitch, yaw):
     """
@@ -91,17 +91,17 @@ def startPos2_callback(msg):
 
 def listener():
     rospy.init_node("release")
-    rospy.Subscriber("/release"+str(robotNum), Bool, release_callback)
+    rospy.Subscriber("/release"+str(robotNum), Int32, release_callback)
     rospy.Subscriber("/robot1/odom", Odometry, startPos1_callback)
     rospy.Subscriber("/robot2/odom", Odometry, startPos2_callback)
     rospy.Subscriber("/donefullness"+str(robotNum), Int32MultiArray, mission_callback)
     rospy.spin()
 
-def publisher():
+def publisher(num):
     pub = rospy.Publisher('/release_point'+str(robotNum), PoseArray, queue_size=1000)
     for i in range(4):
         if fullness[i] == 0:
-            ang = (225 - i*90) * math.pi / 180
+            ang = (point[num][2] - i*90) * math.pi / 180
             break
     robotAng = euler2quaternion(0, 0, ang)
 
@@ -110,8 +110,8 @@ def publisher():
 
     for j in range(4):
         pose = Pose()
-        pose.position.x = point[robotNum][0]
-        pose.position.y = point[robotNum][1]
+        pose.position.x = point[num][0]
+        pose.position.y = point[num][1]
         pose.orientation.x = robotAng.x
         pose.orientation.y = robotAng.y
         pose.orientation.z = robotAng.z

@@ -44,6 +44,8 @@ int robot = 1; // 0 for big, 1 for small
 int cakeNum = 0;
 int gotCake = 0;
 int cherryNum = 0;
+int who_basket = -1;
+int now_release = -1;
 int now_Mission = CAKE;
 int now_Status = SETUP;
 int now_Mode = NORMAL;
@@ -77,11 +79,13 @@ bool plates[5] = {0, 0, 0, 0}; // x y
 bool printOnce = false;
 
 string id;
+string cid;
 string id_frame  = "robot"+to_string(robot+1)+"/map";
 
 std_msgs::Bool cake;
 std_msgs::Bool cherry;
-std_msgs::Bool release;
+std_msgs::Int32 release;
+std_msgs::Int32 basket_robot;
 std_msgs::Bool finish_mission;
 std_msgs::String missionStr;
 
@@ -120,12 +124,23 @@ public:
 
     void pcherry_callback(const geometry_msgs::PoseArray::ConstPtr &msg)
     {
+        cid = msg->header.frame_id;
         for (int i = 0;i < 2;i++)
         {
             poseStamped_set(cherry_picked[i], msg->poses[i].position.x, msg->poses[i].position.y, msg->poses[i].orientation.z, msg->poses[i].orientation.w);
         }
         got_cherry_picked = true;
         // ROS_INFO("cherry_picked got!");
+    }
+
+    void basket_callback(const std_msgs::Int32::ConstPtr &msg)
+    {
+        who_basket = msg->data;
+    }
+
+    void anothere_callback(const std_msgs::Int32::ConstPtr &msg)
+    {
+        release.data = msg->data;
     }
 
     void release_callback(const geometry_msgs::PoseArray::ConstPtr &msg)
@@ -191,7 +206,7 @@ public:
 
     void cherry_callback(const std_msgs::Int32MultiArray::ConstPtr &msg)
     {
-        ROS_INFO("Cherry!");
+        // ROS_INFO("Cherry!");
     }
 
     void myPos_callback(const nav_msgs::Odometry::ConstPtr &msg)
@@ -215,10 +230,13 @@ public:
     // main
     ros::Publisher _better_cake = nh.advertise<std_msgs::Bool>("cake"+to_string(robot), 1000);
     ros::Publisher _first_cherry = nh.advertise<std_msgs::Bool>("cherry"+to_string(robot), 1000);
-    ros::Publisher _release = nh.advertise<std_msgs::Bool>("release"+to_string(robot), 1000);
+    ros::Publisher _ibasket = nh.advertise<std_msgs::Int32>("basketornot", 1000);
+    ros::Publisher _release = nh.advertise<std_msgs::Int32>("release"+to_string(robot), 1000);
     ros::Publisher _ifinish = nh.advertise<std_msgs::Bool>("finishall", 1000);
     ros::Subscriber _cake_picked = nh.subscribe<geometry_msgs::PoseArray>("cake_picked"+to_string(robot), 1000, &mainProgram::pcake_callback, this);
     ros::Subscriber _cherry_picked = nh.subscribe<geometry_msgs::PoseArray>("cherry_picked"+to_string(robot), 1000, &mainProgram::pcherry_callback, this);
+    ros::Subscriber _basketornot = nh.subscribe<std_msgs::Int32>("basketornot", 1000, &mainProgram::basket_callback, this);
+    ros::Subscriber _another_release = nh.subscribe<std_msgs::Int32>("release"+to_string(!bool(robot)), 1000, &mainProgram::anothere_callback, this);
     ros::Subscriber _release_point = nh.subscribe<geometry_msgs::PoseArray>("release_point"+to_string(robot), 1000, &mainProgram::release_callback, this);
     ros::Subscriber _finishall = nh.subscribe<std_msgs::Bool>("finishall", 1000, &mainProgram::finishall_callback, this);
 
@@ -276,10 +294,11 @@ int main(int argc, char **argv)
                     cake.data = true;
                     cakeTime = ros::Time::now();
                     cherry.data = false;
-                    release.data = false;
+                    release.data = 0;
                     finish_mission.data = false;
+
                     mainClass.poseStamped_set(basket_point[0], 0.225, 0.225, 0, 1);
-                    mainClass.poseStamped_set(basket_point[1], 0.420, 1.775, 0, 1);
+                    mainClass.poseStamped_set(basket_point[1], 0.225, 1.775, 0, 1);
                     mainClass.poseStamped_set(home, 1.125, 0.420, 0, 1);
                 }
                 printOnce = true;
@@ -318,7 +337,7 @@ int main(int argc, char **argv)
                         arrived = false;
                         mission_success = false;
                         now_Mission = HOME;
-                        ROS_INFO("===== Time to Go Home !!! =====");
+                        ROS_WARN("===== Time to Go Home !!! =====");
                     }
                     else if (got_cake_picked)
                     {
@@ -417,7 +436,7 @@ int main(int argc, char **argv)
                         arrived = false;
                         mission_success = false;
                         now_Mission = HOME;
-                        ROS_INFO("===== Time to Go Home !!! =====");
+                        ROS_WARN("===== Time to Go Home !!! =====");
                     }
                     else if (!cherry.data)
                     {
@@ -449,7 +468,7 @@ int main(int argc, char **argv)
                                 }
                                 else
                                 {
-                                    missionStr.data = "v0";
+                                    missionStr.data = "v"+cid;
                                 }
                                 mainClass._mission.publish(missionStr);
                                 ROS_INFO("Mission [%s] published!", missionStr.data.c_str());
@@ -497,72 +516,105 @@ int main(int argc, char **argv)
                     if (ros::Time::now().toSec() - initialTime.toSec() >= go_home_time && !going_home)
                     {
                         now_Mission = HOME;
-                        ROS_INFO("===== Time to Go Home !!! =====");
+                        ROS_WARN("===== Time to Go Home !!! =====");
                     }
-                    else if (!moving && !doing)
+                    else if (who_basket == -1)
                     {
-                        if (route_failed)
+                        basket_robot.data = robot;
+                        mainClass._ibasket.publish(basket_robot);
+                    }
+                    else if (who_basket != robot)
+                    {
+                        now_Mission = CHERRY;
+                        ROS_WARN("Cherry again !!!");
+                        mainClass._first_cherry.publish(cherry);
+                        cherryNum = 0;
+                        got_cherry_picked = false;
+                    }
+                    else
+                    {
+                        if (!moving && !doing)
                         {
-                            route_failed = false;
-                            now_Mission = RELEASE;
+                            if (route_failed)
+                            {
+                                route_failed = false;
+                                now_Mission = RELEASE;
+                                basket_robot.data = -1;
+                                mainClass._ibasket.publish(basket_robot);
+                            }
+                            else if (!arrived && !mission_success)
+                            {
+                                mainClass._where2go.publish(basket_point[side]);
+                                ROS_INFO("Heading over to x:[%.3f] y:[%.3f]", basket_point[side].pose.position.x, basket_point[side].pose.position.y);
+                                moving = true;
+                                startDriveTime = ros::Time::now().toSec();
+                            }
+                            else if (arrived)
+                            {
+                                arrived = false;
+                                missionStr.data = "u0";
+                                mainClass._mission.publish(missionStr);
+                                ROS_INFO("Mission [%s] published!", missionStr.data.c_str());
+                                doing = true;
+                                startMissionTime = ros::Time::now().toSec();
+                            }
+                            else if (mission_success)
+                            {
+                                mission_success = false;
+                                now_Mission = RELEASE;
+                                basket_robot.data = -1;
+                                mainClass._ibasket.publish(basket_robot);
+                            }
                         }
-                        else if (!arrived && !mission_success)
+                        else if (moving && ros::Time::now().toSec() - startDriveTime >= driving_timeOut)
                         {
-                            mainClass._where2go.publish(basket_point[side]);
-                            ROS_INFO("Heading over to x:[%.3f] y:[%.3f]", basket_point[side].pose.position.x, basket_point[side].pose.position.y);
-                            moving = true;
-                            startDriveTime = ros::Time::now().toSec();
-                        }
-                        else if (arrived)
-                        {
+                            moving = false;
+                            doing = false;
                             arrived = false;
-                            missionStr.data = "u0";
-                            mainClass._mission.publish(missionStr);
-                            ROS_INFO("Mission [%s] published!", missionStr.data.c_str());
-                            doing = true;
-                            startMissionTime = ros::Time::now().toSec();
-                        }
-                        else if (mission_success)
-                        {
                             mission_success = false;
+                            ROS_WARN("===== Can't reach x:[%.3f] y:[%.3f]! =====", basket_point[side].pose.position.x, basket_point[side].pose.position.y);
                             now_Mission = RELEASE;
+                            basket_robot.data = -1;
+                            mainClass._ibasket.publish(basket_robot);
                         }
-                    }
-                    else if (moving && ros::Time::now().toSec() - startDriveTime >= driving_timeOut)
-                    {
-                        moving = false;
-                        doing = false;
-                        arrived = false;
-                        mission_success = false;
-                        ROS_WARN("===== Can't reach x:[%.3f] y:[%.3f]! =====", basket_point[side].pose.position.x, basket_point[side].pose.position.y);
-                        now_Mission = RELEASE;
-                    }
-                    else if (doing && ros::Time::now().toSec() - startMissionTime >= mission_timeOut)
-                    {
-                        moving = false;
-                        doing = false;
-                        arrived = false;
-                        mission_success = false;
-                        ROS_WARN("===== Mission [%s] overtime! =====", missionStr.data.c_str());
-                        now_Mission = RELEASE;
+                        else if (doing && ros::Time::now().toSec() - startMissionTime >= mission_timeOut)
+                        {
+                            moving = false;
+                            doing = false;
+                            arrived = false;
+                            mission_success = false;
+                            ROS_WARN("===== Mission [%s] overtime! =====", missionStr.data.c_str());
+                            now_Mission = RELEASE;
+                            basket_robot.data = -1;
+                            mainClass._ibasket.publish(basket_robot);
+                        }
                     }
                     break;
 
                 case RELEASE:
-
+                    
                     mission_timeOut = 10;
                     driving_timeOut = 20;
 
                     if (ros::Time::now().toSec() - initialTime.toSec() >= go_home_time && !going_home)
                     {
                         now_Mission = HOME;
-                        ROS_INFO("===== Time to Go Home !!! =====");
+                        ROS_WARN("===== Time to Go Home !!! =====");
                     }
-                    else if (!release.data)
+                    else if (now_release == -1)
                     {
-                        release.data = true;
-                        mainClass._release.publish(release);
-                        ROS_INFO("fullness : %d %d %d %d", fullness[0], fullness[1], fullness[2], fullness[3]);
+                        now_release = release.data;
+                        if (now_release == release.data && release.data == 0)
+                        {
+                            release.data = 1;
+                            mainClass._release.publish(release);
+                            // ROS_INFO("fullness : %d %d %d %d", fullness[0], fullness[1], fullness[2], fullness[3]);
+                        }
+                        else if (now_release == release.data && release.data == 1)
+                        {
+                            release.data = 2;
+                            mainClass._release.publish(release);
+                        }
                     }
                     else if (got_release_point)
                     {
@@ -632,9 +684,13 @@ int main(int argc, char **argv)
                     if (route_failed)
                     {
                         route_failed = false;
-                        mainClass._where2go.publish(home);
-                        ROS_INFO("Trying to reach x:[%.3f] y:[%.3f] again!", home.pose.position.x, home.pose.position.y);
-                        moving = true;
+                        if (ros::Time::now().toSec() - startDriveTime >= 1)
+                        {
+                            mainClass._where2go.publish(home);
+                            ROS_INFO("Trying to reach x:[%.3f] y:[%.3f] again!", home.pose.position.x, home.pose.position.y);
+                            moving = true;
+                            startDriveTime = ros::Time::now().toSec();
+                        }
                     }
                     else if (!moving)
                     {
@@ -643,6 +699,7 @@ int main(int argc, char **argv)
                             mainClass._where2go.publish(home);
                             ROS_INFO("Heading over to x:[%.3f] y:[%.3f]", home.pose.position.x, home.pose.position.y);
                             moving = true;
+                            startDriveTime = ros::Time::now().toSec();
                         }
                         else
                         {

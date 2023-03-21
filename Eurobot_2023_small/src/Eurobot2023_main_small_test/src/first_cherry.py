@@ -2,6 +2,7 @@
 
 import rospy
 from std_msgs.msg import Bool
+from std_msgs.msg import Int32MultiArray
 from nav_msgs.msg import Odometry
 from geometry_msgs.msg import Pose
 from geometry_msgs.msg import PoseStamped
@@ -9,7 +10,7 @@ from geometry_msgs.msg import PoseArray
 import numpy as np
 from scipy.spatial.distance import euclidean
 
-cherries = [[[100, 900], [300, 900]], [[1350, 1885], [1650, 1885]], [[2700, 900], [2900, 900]], [[1350, 115], [1650, 115]]]
+cherries = [[[100, 900], [300, 900]], [[1350, 1885], [1650, 1885]], [[2700, 900], [2900, 900]], [[1350, 115], [1650, 115]], [[100, 1100], [300, 1100]], [[2700, 1100], [2900, 1100]]]
 
 # subscribe cherries’ existence
 cherry = [1, 1, 1, 1]
@@ -42,7 +43,16 @@ def cherryPublish():
     pub = rospy.Publisher('/cherry_picked' + str(robotNum), PoseArray, queue_size=1000)
     side = pickedSide[robotNum]
     if side != [[-1, -1], [-1, -1]]:
-        robotPose.header.frame_id = "/robot" + str(pickedSide.index(side)+1) + "/map"
+        num = '-'
+        for i in cherries:
+            if side[0] in i:
+                if cherries.index(i) < 4:
+                    num = str(cherries.index(i))
+                elif cherries.index(i) == 4:
+                    num = '0'
+                elif cherries.index(i) == 5:
+                    num = '2'
+        robotPose.header.frame_id = num
         robotPose.header.stamp = rospy.Time.now()
 
         for i in side:
@@ -62,31 +72,38 @@ def cherry_callback(msg):
     if msg.data:
         publisher()
 
+def cherryE_callback(msg):
+    # print(cherry)
+    for i in range(4):
+        cherry[i] = msg.data[i]
+
 def where2suck(pos, num):
     global tempMin, tempSide, used
     tempMin[num] = 99999
     tempSide[num] = [[-1, -1], [-1, -1]]
 
     for sides in cherries:
-        for cherrySide in sides:
-            if cherrySide not in used:
-                dis2cherry = euclidean(pos, cherrySide)
-                if dis2cherry < tempMin[num]:
-                    tempMin[num] = dis2cherry
-                    tempSide[num] = sides
-                    if cherrySide == tempSide[num][1]:
-                        tempSide[num][0], tempSide[num][1] = tempSide[num][1], tempSide[num][0]
+        if (cherries.index(sides) < 4 and cherry[cherries.index(sides)] != 0) or (cherries.index(sides) == 4 and cherry[0] != 0) or (cherries.index(sides) == 5 and cherry[2] != 0):
+            for cherrySide in sides:
+                if cherrySide not in used:
+                    dis2cherry = euclidean(pos, cherrySide)
+                    if dis2cherry < tempMin[num]:
+                        tempMin[num] = dis2cherry
+                        tempSide[num] = sides
+                        if cherrySide == tempSide[num][1]:
+                            tempSide[num][0], tempSide[num][1] = tempSide[num][1], tempSide[num][0]
     return tempSide[num]
 
 def listener():
     rospy.init_node("first_cherry")
     rospy.Subscriber("/cherry" + str(robotNum), Bool, cherry_callback)
-    rospy.Subscriber("/cherryExistence", Bool, cherry_callback)
+    rospy.Subscriber("/cherryExistence", Int32MultiArray, cherryE_callback)
     rospy.Subscriber("/robot1/odom", Odometry, startPos1_callback)
     rospy.Subscriber("/robot2/odom", Odometry, startPos2_callback)
     rospy.spin()
 
 def publisher():
+    # print(cherry)
     global robotPose, used
     for robot in startPos:
         if robot != [-1, -1]:
@@ -104,7 +121,8 @@ def publisher():
             pickedSide[0] = [[-1, -1], [-1, -1]]
             tempMin[0] = 99999
             pickedSide[0] = where2suck(startPos[0], 0)
-        
+    
+    robotPose.poses = []
     cherryPublish()
 
 if __name__=="__main__":
