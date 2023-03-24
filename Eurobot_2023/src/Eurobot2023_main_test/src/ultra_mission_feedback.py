@@ -68,13 +68,13 @@ def publisher(time):
     global arr
     pub = rospy.Publisher('/donefullness'+str(robotNum), Int32MultiArray, queue_size=1000)
     done.data = arr
-    done2.data = arr2
     rospy.sleep(time)
     pub.publish(done)
     
 def publisher2():
     global arr2
     pub2 = rospy.Publisher('/cherryExistence', Int32MultiArray, queue_size=1000)
+    done2.data = arr2
     rospy.sleep(0.3)
     pub2.publish(done2)
 

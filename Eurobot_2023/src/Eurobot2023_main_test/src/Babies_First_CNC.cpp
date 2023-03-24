@@ -4,9 +4,13 @@
 #include <std_msgs/Int32.h>
 #include <std_msgs/Int32MultiArray.h>
 #include <std_msgs/Float32.h>
+#include <geometry_msgs/Pose.h>
 #include <geometry_msgs/PoseStamped.h>
 #include <nav_msgs/Odometry.h>
 #include <geometry_msgs/PoseArray.h>
+#include <Eurobot2023_main_test/cake.h>
+#include <Eurobot2023_main_test/cherry.h>
+#include <Eurobot2023_main_test/release.h>
 
 #include <iostream>
 #include <stdlib.h>
@@ -60,9 +64,7 @@ double enemiesOri_z;
 double enemiesOri_w;
 double mission_timeOut;
 double startMissionTime;
-double driving_timeOut;
-double startDriveTime;
-double go_home_time = 90.0;
+double go_home_time = 86.0;
 
 bool start = false;
 bool moving = false;
@@ -82,8 +84,6 @@ string id;
 string cid;
 string id_frame  = "robot"+to_string(robot+1)+"/map";
 
-std_msgs::Bool cake;
-std_msgs::Bool cherry;
 std_msgs::Int32 release;
 std_msgs::Int32 basket_robot;
 std_msgs::Bool finish_mission;
@@ -109,28 +109,6 @@ public:
         pos.pose.orientation.y = 0.0;
         pos.pose.orientation.z = z;
         pos.pose.orientation.w = w;
-    }
-
-    void pcake_callback(const geometry_msgs::PoseArray::ConstPtr &msg)
-    {
-        id = msg->header.frame_id;
-        for (int i = 0;i < 3;i++)
-        {
-            poseStamped_set(cake_picked[i], msg->poses[i].position.x, msg->poses[i].position.y, msg->poses[i].orientation.z, msg->poses[i].orientation.w);
-        }
-        got_cake_picked = true;
-        // ROS_INFO("cake_picked got!");
-    }
-
-    void pcherry_callback(const geometry_msgs::PoseArray::ConstPtr &msg)
-    {
-        cid = msg->header.frame_id;
-        for (int i = 0;i < 2;i++)
-        {
-            poseStamped_set(cherry_picked[i], msg->poses[i].position.x, msg->poses[i].position.y, msg->poses[i].orientation.z, msg->poses[i].orientation.w);
-        }
-        got_cherry_picked = true;
-        // ROS_INFO("cherry_picked got!");
     }
 
     void basket_callback(const std_msgs::Int32::ConstPtr &msg)
@@ -228,17 +206,15 @@ public:
     ros::NodeHandle nh;
 
     // main
-    ros::Publisher _better_cake = nh.advertise<std_msgs::Bool>("cake"+to_string(robot), 1000);
-    ros::Publisher _first_cherry = nh.advertise<std_msgs::Bool>("cherry"+to_string(robot), 1000);
     ros::Publisher _ibasket = nh.advertise<std_msgs::Int32>("basketornot", 1000);
     ros::Publisher _release = nh.advertise<std_msgs::Int32>("release"+to_string(robot), 1000);
     ros::Publisher _ifinish = nh.advertise<std_msgs::Bool>("finishall", 1000);
-    ros::Subscriber _cake_picked = nh.subscribe<geometry_msgs::PoseArray>("cake_picked"+to_string(robot), 1000, &mainProgram::pcake_callback, this);
-    ros::Subscriber _cherry_picked = nh.subscribe<geometry_msgs::PoseArray>("cherry_picked"+to_string(robot), 1000, &mainProgram::pcherry_callback, this);
     ros::Subscriber _basketornot = nh.subscribe<std_msgs::Int32>("basketornot", 1000, &mainProgram::basket_callback, this);
     ros::Subscriber _another_release = nh.subscribe<std_msgs::Int32>("release"+to_string(!bool(robot)), 1000, &mainProgram::anothere_callback, this);
-    ros::Subscriber _release_point = nh.subscribe<geometry_msgs::PoseArray>("release_point"+to_string(robot), 1000, &mainProgram::release_callback, this);
     ros::Subscriber _finishall = nh.subscribe<std_msgs::Bool>("finishall", 1000, &mainProgram::finishall_callback, this);
+    ros::ServiceClient _cake_client = nh.serviceClient<Eurobot2023_main_test::cake>("cake"+to_string(robot));
+    ros::ServiceClient _cherry_client = nh.serviceClient<Eurobot2023_main_test::cherry>("cherry"+to_string(robot));
+    ros::ServiceClient _release_client = nh.serviceClient<Eurobot2023_main_test::release>("release"+to_string(robot));
 
     // chassis
     ros::Publisher _where2go = nh.advertise<geometry_msgs::PoseStamped>("/robot"+to_string(robot+1)+"/nav_goal", 1000);
@@ -275,7 +251,7 @@ int main(int argc, char **argv)
 
     ros::Time initialTime = ros::Time::now();
     ros::Time cakeTime = ros::Time::now();
-    
+    Eurobot2023_main_test::cake srv;
     // Main Node Update Frequency
     ros::Rate rate(20);
 
@@ -291,9 +267,7 @@ int main(int argc, char **argv)
                 if (!printOnce)
                 {
                     ROS_WARN("SETUP");
-                    cake.data = true;
                     cakeTime = ros::Time::now();
-                    cherry.data = false;
                     release.data = 0;
                     finish_mission.data = false;
 
@@ -308,11 +282,21 @@ int main(int argc, char **argv)
                     now_Status = RUN;
                     printOnce = false; 
                 }
-                if (ros::Time::now().toSec() - cakeTime.toSec() >= 0.4)
+
+                if (ros::Time::now().toSec() - cakeTime.toSec() >= 0.4 && mainClass._cake_client.call(srv))
                 {
-                    mainClass._better_cake.publish(cake);
-                    cakeTime = ros::Time::now();
+                    if (srv.response.picked.header.frame_id != "")
+                    {
+                        id = srv.response.picked.header.frame_id;
+                        for (int i = 0;i < 3;i++)
+                        {
+                            mainClass.poseStamped_set(cake_picked[i], srv.response.picked.poses[i].position.x, srv.response.picked.poses[i].position.y, srv.response.picked.poses[i].orientation.z, srv.response.picked.poses[i].orientation.w);
+                        }
+                        got_cake_picked = true;
+                        cakeTime = ros::Time::now();
+                    }
                 }
+
                 break;
 
             case RUN:
@@ -328,7 +312,6 @@ int main(int argc, char **argv)
                 case CAKE:
 
                     mission_timeOut = 5;
-                    driving_timeOut = 20;
                     
                     if (ros::Time::now().toSec() - initialTime.toSec() >= go_home_time && !going_home)
                     {
@@ -338,6 +321,7 @@ int main(int argc, char **argv)
                         mission_success = false;
                         now_Mission = HOME;
                         ROS_WARN("===== Time to Go Home !!! =====");
+                        moving = false;
                     }
                     else if (got_cake_picked)
                     {
@@ -353,6 +337,9 @@ int main(int argc, char **argv)
                                 else
                                 {
                                     now_Mission = CHERRY;
+                                    missionStr.data = "h0";
+                                    mainClass._mission.publish(missionStr);
+                                    ROS_INFO("Mission [%s] published!", missionStr.data.c_str());
                                 }
                             }
                             else if (!arrived && !mission_success)
@@ -365,7 +352,6 @@ int main(int argc, char **argv)
                                 mainClass._where2go.publish(cake_picked[cakeNum]);
                                 ROS_INFO("Heading over to x:[%.3f] y:[%.3f]", cake_picked[cakeNum].pose.position.x, cake_picked[cakeNum].pose.position.y);
                                 moving = true;
-                                startDriveTime = ros::Time::now().toSec();
                             }
                             else if (arrived)
                             {
@@ -387,23 +373,10 @@ int main(int argc, char **argv)
                                 else
                                 {
                                     now_Mission = CHERRY;
+                                    missionStr.data = "h0";
+                                    mainClass._mission.publish(missionStr);
+                                    ROS_INFO("Mission [%s] published!", missionStr.data.c_str());
                                 }
-                            }
-                        }
-                        else if (moving && ros::Time::now().toSec() - startDriveTime >= driving_timeOut)
-                        {
-                            moving = false;
-                            doing = false;
-                            arrived = false;
-                            mission_success = false;
-                            ROS_WARN("===== Can't reach x:[%.3f] y:[%.3f]! =====", cake_picked[cakeNum].pose.position.x, cake_picked[cakeNum].pose.position.y);
-                            if (cakeNum < 2)
-                            {
-                                cakeNum++;
-                            }
-                            else
-                            {
-                                now_Mission = CHERRY;
                             }
                         }
                         else if (doing && ros::Time::now().toSec() - startMissionTime >= mission_timeOut)
@@ -420,6 +393,9 @@ int main(int argc, char **argv)
                             else
                             {
                                 now_Mission = CHERRY;
+                                missionStr.data = "h0";
+                                mainClass._mission.publish(missionStr);
+                                ROS_INFO("Mission [%s] published!", missionStr.data.c_str());
                             }
                         }
                     }
@@ -428,7 +404,6 @@ int main(int argc, char **argv)
                 case CHERRY:
                     
                     mission_timeOut = 10;
-                    driving_timeOut = 20;
                     if (ros::Time::now().toSec() - initialTime.toSec() >= go_home_time && !going_home)
                     {
                         moving = false;
@@ -437,11 +412,22 @@ int main(int argc, char **argv)
                         mission_success = false;
                         now_Mission = HOME;
                         ROS_WARN("===== Time to Go Home !!! =====");
+                        moving = false;
                     }
-                    else if (!cherry.data)
+                    else if (!got_cherry_picked)
                     {
-                        cherry.data = true;
-                        mainClass._first_cherry.publish(cherry);
+                        if (mainClass._cherry_client.call(srv))
+                        {
+                            if (srv.response.picked.header.frame_id != "")
+                            {
+                                cid = srv.response.picked.header.frame_id;
+                                for (int i = 0;i < 2;i++)
+                                {
+                                    mainClass.poseStamped_set(cherry_picked[i], srv.response.picked.poses[i].position.x, srv.response.picked.poses[i].position.y, srv.response.picked.poses[i].orientation.z, srv.response.picked.poses[i].orientation.w);
+                                }
+                                got_cherry_picked = true;
+                            }
+                        }
                     }
                     else if (got_cherry_picked)
                     {
@@ -457,7 +443,6 @@ int main(int argc, char **argv)
                                 mainClass._where2go.publish(cherry_picked[cherryNum]);
                                 ROS_INFO("Heading over to x:[%.3f] y:[%.3f]", cherry_picked[cherryNum].pose.position.x, cherry_picked[cherryNum].pose.position.y);
                                 moving = true;
-                                startDriveTime = ros::Time::now().toSec();
                             }
                             else if (arrived)
                             {
@@ -488,15 +473,6 @@ int main(int argc, char **argv)
                                 }
                             }
                         }
-                        else if (moving && ros::Time::now().toSec() - startDriveTime >= driving_timeOut)
-                        {
-                            moving = false;
-                            doing = false;
-                            arrived = false;
-                            mission_success = false;
-                            ROS_WARN("===== Can't reach x:[%.3f] y:[%.3f]! =====",  cherry_picked[cherryNum].pose.position.x, cherry_picked[cherryNum].pose.position.y);
-                            now_Mission = BASKET;
-                        }
                         else if (doing && ros::Time::now().toSec() - startMissionTime >= mission_timeOut)
                         {
                             moving = false;
@@ -512,11 +488,11 @@ int main(int argc, char **argv)
                 case BASKET:
                     
                     mission_timeOut = 10;
-                    driving_timeOut = 20;
                     if (ros::Time::now().toSec() - initialTime.toSec() >= go_home_time && !going_home)
                     {
                         now_Mission = HOME;
                         ROS_WARN("===== Time to Go Home !!! =====");
+                        moving = false;
                     }
                     else if (who_basket == -1)
                     {
@@ -527,7 +503,6 @@ int main(int argc, char **argv)
                     {
                         now_Mission = CHERRY;
                         ROS_WARN("Cherry again !!!");
-                        mainClass._first_cherry.publish(cherry);
                         cherryNum = 0;
                         got_cherry_picked = false;
                     }
@@ -547,7 +522,6 @@ int main(int argc, char **argv)
                                 mainClass._where2go.publish(basket_point[side]);
                                 ROS_INFO("Heading over to x:[%.3f] y:[%.3f]", basket_point[side].pose.position.x, basket_point[side].pose.position.y);
                                 moving = true;
-                                startDriveTime = ros::Time::now().toSec();
                             }
                             else if (arrived)
                             {
@@ -566,17 +540,6 @@ int main(int argc, char **argv)
                                 mainClass._ibasket.publish(basket_robot);
                             }
                         }
-                        else if (moving && ros::Time::now().toSec() - startDriveTime >= driving_timeOut)
-                        {
-                            moving = false;
-                            doing = false;
-                            arrived = false;
-                            mission_success = false;
-                            ROS_WARN("===== Can't reach x:[%.3f] y:[%.3f]! =====", basket_point[side].pose.position.x, basket_point[side].pose.position.y);
-                            now_Mission = RELEASE;
-                            basket_robot.data = -1;
-                            mainClass._ibasket.publish(basket_robot);
-                        }
                         else if (doing && ros::Time::now().toSec() - startMissionTime >= mission_timeOut)
                         {
                             moving = false;
@@ -594,43 +557,59 @@ int main(int argc, char **argv)
                 case RELEASE:
                     
                     mission_timeOut = 10;
-                    driving_timeOut = 20;
 
                     if (ros::Time::now().toSec() - initialTime.toSec() >= go_home_time && !going_home)
                     {
                         now_Mission = HOME;
                         ROS_WARN("===== Time to Go Home !!! =====");
+                        moving = false;
                     }
-                    else if (now_release == -1)
+                    else if (!got_release_point)
                     {
-                        now_release = release.data;
-                        if (now_release == release.data && release.data == 0)
+                        if (release.data == 0 || release.data == robot+1)
                         {
-                            release.data = 1;
+                            release.data = robot+1;
                             mainClass._release.publish(release);
-                            // ROS_INFO("fullness : %d %d %d %d", fullness[0], fullness[1], fullness[2], fullness[3]);
+                            Eurobot2023_main_test::release rsrv;
+                            rsrv.request.num = 0;
+                            if (mainClass._release_client.call(rsrv))
+                            {
+                                if (rsrv.response.picked.header.frame_id != "")
+                                {
+                                    for (int i = 0;i < 4;i++)
+                                    {
+                                        mainClass.poseStamped_set(release_point[i], rsrv.response.picked.poses[i].position.x, rsrv.response.picked.poses[i].position.y, rsrv.response.picked.poses[i].orientation.z, rsrv.response.picked.poses[i].orientation.w);
+                                    }
+                                    got_release_point = true;
+                                }
+                            }
                         }
-                        else if (now_release == release.data && release.data == 1)
+                        else
                         {
-                            release.data = 2;
-                            mainClass._release.publish(release);
+                            Eurobot2023_main_test::release rsrv;
+                            rsrv.request.num = 1;
+                            if (mainClass._release_client.call(rsrv))
+                            {
+                                if (rsrv.response.picked.header.frame_id != "")
+                                {
+                                    for (int i = 0;i < 4;i++)
+                                    {
+                                        mainClass.poseStamped_set(release_point[i], rsrv.response.picked.poses[i].position.x, rsrv.response.picked.poses[i].position.y, rsrv.response.picked.poses[i].orientation.z, rsrv.response.picked.poses[i].orientation.w);
+                                    }
+                                    got_release_point = true;
+                                }
+                            }
                         }
                     }
                     else if (got_release_point)
                     {
                         if (!moving && !doing)
                         {
-                            if (route_failed)
-                            {
-                                route_failed = false;
-                                now_Mission = STEAL;
-                            }
                             else if (!arrived && !mission_success)
                             {
                                 mainClass._where2go.publish(release_point[gotCake]);
                                 ROS_INFO("Heading over to x:[%.3f] y:[%.3f]", release_point[gotCake].pose.position.x, release_point[gotCake].pose.position.y);
                                 moving = true;
-                                startDriveTime = ros::Time::now().toSec();
                             }
                             else if (arrived)
                             {
@@ -654,15 +633,6 @@ int main(int argc, char **argv)
                                 }
                             }
                         }
-                    }
-                    else if (moving && ros::Time::now().toSec() - startDriveTime >= driving_timeOut)
-                    {
-                        moving = false;
-                        doing = false;
-                        arrived = false;
-                        mission_success = false;
-                        ROS_WARN("===== Can't reach x:[%.3f] y:[%.3f]! =====", release_point[robot].pose.position.x, release_point[robot].pose.position.y);
-                        now_Mission = STEAL;
                     }
                     else if (doing && ros::Time::now().toSec() - startMissionTime >= mission_timeOut)
                     {
@@ -699,7 +669,6 @@ int main(int argc, char **argv)
                             mainClass._where2go.publish(home);
                             ROS_INFO("Heading over to x:[%.3f] y:[%.3f]", home.pose.position.x, home.pose.position.y);
                             moving = true;
-                            startDriveTime = ros::Time::now().toSec();
                         }
                         else
                         {
