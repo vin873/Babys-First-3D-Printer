@@ -78,6 +78,16 @@ def cherryE_callback(msg):
     for i in range(4):
         cherryE[i] = msg.data[i]
 
+def closerEnemy(target):
+    global enemies
+    speed = 0.9  # enemy/our
+    min = 99999
+    for enemy in enemies:
+        if enemy != [-1, -1]:
+            if min > euclidean(enemy, target) / speed:
+                min = euclidean(enemy, target) / speed
+    return min
+
 def where2suck(pos, num):
     global tempMin, tempSide, used
     tempMin[num] = 99999
@@ -87,10 +97,12 @@ def where2suck(pos, num):
         if (cherries.index(sides) < 4 and cherryE[cherries.index(sides)] != 0) or (cherries.index(sides) == 4 and cherryE[0] != 0) or (cherries.index(sides) == 5 and cherryE[2] != 0):
             for cherrySide in sides:
                 if cherrySide not in used:
-                    dis2cherry = euclidean(pos, cherrySide)
+                    dis2cherry = euclidean(pos, cherrySide) - closerEnemy(cherrySide)
                     if dis2cherry < tempMin[num]:
                         tempMin[num] = dis2cherry
                         tempSide[num] = sides
+                        if euclidean(pos, cherrySide) > euclidean(pos, sides[not bool(sides.index(cherrySide))]):
+                            cherrySide = sides[not bool(sides.index(cherrySide))]
                         if cherrySide == tempSide[num][1]:
                             tempSide[num][0], tempSide[num][1] = tempSide[num][1], tempSide[num][0]
     return tempSide[num]

@@ -179,7 +179,7 @@ public:
 
     void cake_callback(const geometry_msgs::PoseArray::ConstPtr &msg)
     {
-        ROS_INFO("Cake!");
+        // ROS_INFO("Cake!");
     }
 
     void cherry_callback(const std_msgs::Int32MultiArray::ConstPtr &msg)
@@ -605,7 +605,7 @@ int main(int argc, char **argv)
                     {
                         if (!moving && !doing)
                         {
-                            else if (!arrived && !mission_success)
+                            if (!arrived && !mission_success)
                             {
                                 mainClass._where2go.publish(release_point[gotCake]);
                                 ROS_INFO("Heading over to x:[%.3f] y:[%.3f]", release_point[gotCake].pose.position.x, release_point[gotCake].pose.position.y);
@@ -651,18 +651,7 @@ int main(int argc, char **argv)
                 
                 case HOME:
                     going_home = true;
-                    if (route_failed)
-                    {
-                        route_failed = false;
-                        if (ros::Time::now().toSec() - startDriveTime >= 1)
-                        {
-                            mainClass._where2go.publish(home);
-                            ROS_INFO("Trying to reach x:[%.3f] y:[%.3f] again!", home.pose.position.x, home.pose.position.y);
-                            moving = true;
-                            startDriveTime = ros::Time::now().toSec();
-                        }
-                    }
-                    else if (!moving)
+                    if (!moving)
                     {
                         if (!arrived)
                         {
