@@ -64,8 +64,6 @@ double enemiesOri_z;
 double enemiesOri_w;
 double mission_timeOut;
 double startMissionTime;
-double driving_timeOut;
-double startDriveTime;
 double go_home_time = 86.0;
 
 bool start = false;
@@ -181,7 +179,7 @@ public:
 
     void cake_callback(const geometry_msgs::PoseArray::ConstPtr &msg)
     {
-        ROS_INFO("Cake!");
+        // ROS_INFO("Cake!");
     }
 
     void cherry_callback(const std_msgs::Int32MultiArray::ConstPtr &msg)
@@ -314,7 +312,6 @@ int main(int argc, char **argv)
                 case CAKE:
 
                     mission_timeOut = 5;
-                    driving_timeOut = 20;
                     
                     if (ros::Time::now().toSec() - initialTime.toSec() >= go_home_time && !going_home)
                     {
@@ -355,7 +352,6 @@ int main(int argc, char **argv)
                                 mainClass._where2go.publish(cake_picked[cakeNum]);
                                 ROS_INFO("Heading over to x:[%.3f] y:[%.3f]", cake_picked[cakeNum].pose.position.x, cake_picked[cakeNum].pose.position.y);
                                 moving = true;
-                                startDriveTime = ros::Time::now().toSec();
                             }
                             else if (arrived)
                             {
@@ -383,25 +379,6 @@ int main(int argc, char **argv)
                                 }
                             }
                         }
-                        else if (moving && ros::Time::now().toSec() - startDriveTime >= driving_timeOut)
-                        {
-                            moving = false;
-                            doing = false;
-                            arrived = false;
-                            mission_success = false;
-                            ROS_WARN("===== Can't reach x:[%.3f] y:[%.3f]! =====", cake_picked[cakeNum].pose.position.x, cake_picked[cakeNum].pose.position.y);
-                            if (cakeNum < 2)
-                            {
-                                cakeNum++;
-                            }
-                            else
-                            {
-                                now_Mission = CHERRY;
-                                missionStr.data = "h0";
-                                mainClass._mission.publish(missionStr);
-                                ROS_INFO("Mission [%s] published!", missionStr.data.c_str());
-                            }
-                        }
                         else if (doing && ros::Time::now().toSec() - startMissionTime >= mission_timeOut)
                         {
                             moving = false;
@@ -427,7 +404,6 @@ int main(int argc, char **argv)
                 case CHERRY:
                     
                     mission_timeOut = 10;
-                    driving_timeOut = 20;
                     if (ros::Time::now().toSec() - initialTime.toSec() >= go_home_time && !going_home)
                     {
                         moving = false;
@@ -467,7 +443,6 @@ int main(int argc, char **argv)
                                 mainClass._where2go.publish(cherry_picked[cherryNum]);
                                 ROS_INFO("Heading over to x:[%.3f] y:[%.3f]", cherry_picked[cherryNum].pose.position.x, cherry_picked[cherryNum].pose.position.y);
                                 moving = true;
-                                startDriveTime = ros::Time::now().toSec();
                             }
                             else if (arrived)
                             {
@@ -498,15 +473,6 @@ int main(int argc, char **argv)
                                 }
                             }
                         }
-                        else if (moving && ros::Time::now().toSec() - startDriveTime >= driving_timeOut)
-                        {
-                            moving = false;
-                            doing = false;
-                            arrived = false;
-                            mission_success = false;
-                            ROS_WARN("===== Can't reach x:[%.3f] y:[%.3f]! =====",  cherry_picked[cherryNum].pose.position.x, cherry_picked[cherryNum].pose.position.y);
-                            now_Mission = BASKET;
-                        }
                         else if (doing && ros::Time::now().toSec() - startMissionTime >= mission_timeOut)
                         {
                             moving = false;
@@ -522,7 +488,6 @@ int main(int argc, char **argv)
                 case BASKET:
                     
                     mission_timeOut = 10;
-                    driving_timeOut = 20;
                     if (ros::Time::now().toSec() - initialTime.toSec() >= go_home_time && !going_home)
                     {
                         now_Mission = HOME;
@@ -557,7 +522,6 @@ int main(int argc, char **argv)
                                 mainClass._where2go.publish(basket_point[side]);
                                 ROS_INFO("Heading over to x:[%.3f] y:[%.3f]", basket_point[side].pose.position.x, basket_point[side].pose.position.y);
                                 moving = true;
-                                startDriveTime = ros::Time::now().toSec();
                             }
                             else if (arrived)
                             {
@@ -576,17 +540,6 @@ int main(int argc, char **argv)
                                 mainClass._ibasket.publish(basket_robot);
                             }
                         }
-                        else if (moving && ros::Time::now().toSec() - startDriveTime >= driving_timeOut)
-                        {
-                            moving = false;
-                            doing = false;
-                            arrived = false;
-                            mission_success = false;
-                            ROS_WARN("===== Can't reach x:[%.3f] y:[%.3f]! =====", basket_point[side].pose.position.x, basket_point[side].pose.position.y);
-                            now_Mission = RELEASE;
-                            basket_robot.data = -1;
-                            mainClass._ibasket.publish(basket_robot);
-                        }
                         else if (doing && ros::Time::now().toSec() - startMissionTime >= mission_timeOut)
                         {
                             moving = false;
@@ -604,7 +557,6 @@ int main(int argc, char **argv)
                 case RELEASE:
                     
                     mission_timeOut = 10;
-                    driving_timeOut = 20;
 
                     if (ros::Time::now().toSec() - initialTime.toSec() >= go_home_time && !going_home)
                     {
@@ -653,17 +605,11 @@ int main(int argc, char **argv)
                     {
                         if (!moving && !doing)
                         {
-                            if (route_failed)
-                            {
-                                route_failed = false;
-                                now_Mission = STEAL;
-                            }
-                            else if (!arrived && !mission_success)
+                            if (!arrived && !mission_success)
                             {
                                 mainClass._where2go.publish(release_point[gotCake]);
                                 ROS_INFO("Heading over to x:[%.3f] y:[%.3f]", release_point[gotCake].pose.position.x, release_point[gotCake].pose.position.y);
                                 moving = true;
-                                startDriveTime = ros::Time::now().toSec();
                             }
                             else if (arrived)
                             {
@@ -688,15 +634,6 @@ int main(int argc, char **argv)
                             }
                         }
                     }
-                    else if (moving && ros::Time::now().toSec() - startDriveTime >= driving_timeOut)
-                    {
-                        moving = false;
-                        doing = false;
-                        arrived = false;
-                        mission_success = false;
-                        ROS_WARN("===== Can't reach x:[%.3f] y:[%.3f]! =====", release_point[robot].pose.position.x, release_point[robot].pose.position.y);
-                        now_Mission = STEAL;
-                    }
                     else if (doing && ros::Time::now().toSec() - startMissionTime >= mission_timeOut)
                     {
                         moving = false;
@@ -714,25 +651,13 @@ int main(int argc, char **argv)
                 
                 case HOME:
                     going_home = true;
-                    if (route_failed)
-                    {
-                        route_failed = false;
-                        if (ros::Time::now().toSec() - startDriveTime >= 1)
-                        {
-                            mainClass._where2go.publish(home);
-                            ROS_INFO("Trying to reach x:[%.3f] y:[%.3f] again!", home.pose.position.x, home.pose.position.y);
-                            moving = true;
-                            startDriveTime = ros::Time::now().toSec();
-                        }
-                    }
-                    else if (!moving)
+                    if (!moving)
                     {
                         if (!arrived)
                         {
                             mainClass._where2go.publish(home);
                             ROS_INFO("Heading over to x:[%.3f] y:[%.3f]", home.pose.position.x, home.pose.position.y);
                             moving = true;
-                            startDriveTime = ros::Time::now().toSec();
                         }
                         else
                         {

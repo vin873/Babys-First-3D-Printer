@@ -13,6 +13,7 @@ find_package(catkin REQUIRED COMPONENTS
   std_msgs
   geometry_msgs
   message_generation
+  Eurobot2023_main_test
 )
 
 ## System dependencies are found with CMake's conventions
