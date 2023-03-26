@@ -30,9 +30,10 @@ enemies = [[1125, 1775], [1875, 225]]
 startPos = [[-1, -1], [-1, -1]]
 absAng = [0, 0]
 
-picked = [[ [-1, -1],  [-1, -1],  [-1, -1]], [ [-1, -1],  [-1, -1],  [-1, -1]]]
+picked = [[[-1, -1],  [-1, -1],  [-1, -1]], [[-1, -1],  [-1, -1],  [-1, -1]]]
 used = []
 got = [[0, 0, 0], [0, 0, 0]]  # brown, yellow, pink
+tempGot = [[0, 0, 0], [0, 0, 0]]
 fullness = [[0, 0, 0, 0], [0, 0, 0, 0]]
 tempFull = [[0, 0, 0, 0], [0, 0, 0, 0]]
 currMin = [99999, 99999]
@@ -43,8 +44,6 @@ robotNum = 0
 position = [-1, -1]
 quaternion = Quaternion()
 robotPose = PoseArray()
-
-stop = False
 
 def handle_cake(req):
     publisher()
@@ -61,6 +60,21 @@ def startPos2_callback(msg):
     startPos[1][0] = msg.pose.pose.position.x * 1000
     startPos[1][1] = msg.pose.pose.position.y * 1000
     absAng[1] = quaternion2euler(msg.pose.pose.orientation.x, msg.pose.pose.orientation.y, msg.pose.pose.orientation.z, msg.pose.pose.orientation.w)
+
+def allCakes_callback(msg):
+    global allCakes
+    lost = 0
+    id = msg.header.frame_id
+    for c in range(3):
+        num = int(id[c])
+        for i in range(4):
+            if i < num:
+                allCakes[c][i][0] = msg.poses[4*c+i-lost].position.x * 1000
+                allCakes[c][i][1] = msg.poses[4*c+i-lost].position.y * 1000
+            else:
+                lost += 1
+                allCakes[c][i] = [-1, -1]     
+    # print(allCakes)
 
 def robotPublish(num, color):
     global robotPose, tempFull
@@ -132,7 +146,8 @@ def quaternion2euler(x, y, z, w):
 def howLong(pos):
     dis = 0
     for i in range(len(pos) - 1):
-        dis += euclidean(pos[i], pos[i + 1])
+        if pos[i] != [-1, -1] and pos[i+1] != [-1, -1]:
+            dis += euclidean(pos[i], pos[i+1])
     return dis
 
 def closerEnemy(target):
@@ -146,23 +161,17 @@ def closerEnemy(target):
     return min
 
 def whatColorGet(pos, num):
-    global got
+    global tempGot
     for i in range(3):
         if pos in allCakes[i]:
-            got[num][i] = 1
-
-def whatColorReverse(pos, num):
-    global got
-    for i in range(3):
-        if pos in allCakes[i]:
-            got[num][i] = 0
+            tempGot[num][i] = 1
 
 def safest(pos, num):
-    global got, allCakes
+    global tempGot, allCakes
     tempColorMin = 99999
     tempColorPicked =  [-1, -1]
     for i in range(3):
-        if got[num][i] != 1:
+        if tempGot[num][i] != 1:
             for target in allCakes[i]:
                 if target not in used and target != [-1, -1]:
                     if tempColorMin > euclidean(pos, target) - closerEnemy(target):
@@ -171,17 +180,21 @@ def safest(pos, num):
     return tempColorPicked
 
 def where2go(pos, num):
-    global picked, enemies, currMin, fullness, absAng, minAngle, used, outAngle
+    global picked, enemies, currMin, fullness, absAng, minAngle, used, outAngle, tempAllCakes, allCakes, tempGot
+    
+    # print(allCakes)
+    tempGot = [[0, 0, 0], [0, 0, 0]]
+
     if got[num] == [1, 1, 1]:
         return []
     tempMin = 99999
-    for enemy in enemies:
-        if enemy != [-1, -1]:
+    for enemy in range(2):
+        if enemies[enemy] != [-1, -1]:
             for i in range(3):
                 if got[num][i] != 1:
-                    for target in allCakes[i]:
-                        if euclidean(pos, target) < euclidean(enemy, target):
-                            tempAllCakes[i][num][allCakes[i].index(target)] = target
+                    for target in range(4):
+                        if euclidean(pos, allCakes[i][target]) < euclidean(enemies[enemy], allCakes[i][target]) and allCakes[i][target] != [-1, -1]:
+                            tempAllCakes[i][num][target] = allCakes[i][target]
 
     for i in used:
         for j in range(3):
@@ -193,7 +206,7 @@ def where2go(pos, num):
             tempAllCakes[i][num] = [[99999, 99999], [99999, 99999], [99999, 99999], [99999, 99999]]
 
     orders = list(permutations([tempAllCakes[0][num], tempAllCakes[1][num], tempAllCakes[2][num]]))
-    # print(tempB[num], tempY[num], tempP[num])
+    # print(tempAllCakes)
 
     for order in orders:
         for i in order[0]:
@@ -229,6 +242,8 @@ def where2go(pos, num):
         whatColorGet(picked[num][1], num)
         picked[num][2] = safest(picked[num][1], num)
         whatColorGet(picked[num][2], num)
+        if [-1, -1] in picked[num]:
+            picked[num].remove([-1, -1])
         minDis = 99999
         safeOrders = list(permutations(picked[num]))
         for order in safeOrders:
@@ -239,12 +254,9 @@ def where2go(pos, num):
                 order.remove(pos)
                 picked[num] = order
         for i in range(3):
-            if picked[num][i] != [-1, -1]:
-                whatColorReverse(picked[num][i], num)
+            if len(picked[num]) < 3:
+                picked[num].append([-1, -1])
 
-    for i in range(3):
-        if picked[num][i] == [-1, -1]:
-            picked[num].remove(picked[num][i])
     if picked[num]:
         anglePos = pos
         tempAng = list(absAng)
@@ -268,6 +280,7 @@ def where2go(pos, num):
             tempAng[num] = outAngle[num][j]
             tempFull[num][minAngleNum] = j+1
             anglePos = picked[num][j]
+    # print(picked)
 
     currMin[num] = tempMin
 
@@ -276,11 +289,26 @@ def listener():
     rospy.Service('cake'+str(robotNum), cake, handle_cake)
     rospy.Subscriber("/robot1/odom", Odometry, startPos1_callback)
     rospy.Subscriber("/robot2/odom", Odometry, startPos2_callback)
+    rospy.Subscriber("/allCakes", PoseArray, allCakes_callback)
     rospy.spin()
 
 def publisher():
-    global quaternion, stop, enemies, startPos, currMin, picked, used, robotNum, robotPose
+    global quaternion, enemies, startPos, currMin, picked, used, robotNum, robotPose, tempFull, minAngle, tempAllCakes, outAngle, position, quaternion, tempGot
     color = -1
+
+    picked = [[[-1, -1],  [-1, -1],  [-1, -1]], [[-1, -1],  [-1, -1],  [-1, -1]]]
+    used = []
+    tempGot = [[0, 0, 0], [0, 0, 0]]
+    tempFull = [[0, 0, 0, 0], [0, 0, 0, 0]]
+    currMin = [99999, 99999]
+    minAngle = 360
+    outAngle = [[0, 0, 0], [0, 0, 0]]
+    position = [-1, -1]
+    quaternion = Quaternion()
+    robotPose = PoseArray()
+    tempAllCakes = []
+    for i in range(3):
+        tempAllCakes.append([[[-1, -1], [-1, -1], [-1, -1], [-1, -1]], [[-1, -1], [-1, -1], [-1, -1], [-1, -1]]])
 
     if enemies[0] ==  [-1, -1] and enemies[1] ==  [-1, -1]:
         enemies[0] = [99999, 99999]
@@ -314,8 +342,6 @@ def publisher():
             quaternion = euler2quaternion(0, 0, outAngle[robotNum][pos] * math.pi / 180)
             robotPublish(robotNum, color)
         # print(picked)
-
-    stop = False
 
 if __name__=="__main__":
     try:

@@ -179,12 +179,14 @@ public:
 
     void cake_callback(const geometry_msgs::PoseArray::ConstPtr &msg)
     {
-        // ROS_INFO("Cake!");
+        ROS_WARN("Cake update!");
+        got_cake_picked = false;
+        moving = false;
     }
 
     void cherry_callback(const std_msgs::Int32MultiArray::ConstPtr &msg)
     {
-        // ROS_INFO("Cherry!");
+        ROS_WARN("Cherry update!");
     }
 
     void myPos_callback(const nav_msgs::Odometry::ConstPtr &msg)
@@ -323,59 +325,91 @@ int main(int argc, char **argv)
                         ROS_WARN("===== Time to Go Home !!! =====");
                         moving = false;
                     }
+                    else if (!got_cake_picked)
+                    {
+                        if (mainClass._cake_client.call(srv))
+                        {
+                            if (srv.response.picked.header.frame_id != "")
+                            {
+                                id = srv.response.picked.header.frame_id;
+                                for (int i = 0;i < 3;i++)
+                                {
+                                    mainClass.poseStamped_set(cake_picked[i], srv.response.picked.poses[i].position.x, srv.response.picked.poses[i].position.y, srv.response.picked.poses[i].orientation.z, srv.response.picked.poses[i].orientation.w);
+                                }
+                                got_cake_picked = true;
+                                cakeTime = ros::Time::now();
+                            }
+                        }
+                    }
                     else if (got_cake_picked)
                     {
                         if (!moving && !doing)
                         {
-                            if (route_failed)
+                            if (cake_picked[cakeNum].pose.position.x < 0)
                             {
-                                route_failed = false;
                                 if (cakeNum < 2)
+                                    {
+                                        cakeNum++;
+                                    }
+                                    else
+                                    {
+                                        now_Mission = CHERRY;
+                                        missionStr.data = "h0";
+                                        mainClass._mission.publish(missionStr);
+                                        ROS_INFO("Mission [%s] published!", missionStr.data.c_str());
+                                    }
+                            }
+                            else {
+                                if (route_failed)
                                 {
-                                    cakeNum++;
+                                    route_failed = false;
+                                    if (cakeNum < 2)
+                                    {
+                                        cakeNum++;
+                                    }
+                                    else
+                                    {
+                                        now_Mission = CHERRY;
+                                        missionStr.data = "h0";
+                                        mainClass._mission.publish(missionStr);
+                                        ROS_INFO("Mission [%s] published!", missionStr.data.c_str());
+                                    }
                                 }
-                                else
+                                else if (!arrived && !mission_success)
                                 {
-                                    now_Mission = CHERRY;
-                                    missionStr.data = "h0";
+                                    missionStr.data = id[2*cakeNum];
+                                    missionStr.data += id[2*cakeNum+1];
                                     mainClass._mission.publish(missionStr);
                                     ROS_INFO("Mission [%s] published!", missionStr.data.c_str());
-                                }
-                            }
-                            else if (!arrived && !mission_success)
-                            {
-                                missionStr.data = id[2*cakeNum];
-                                missionStr.data += id[2*cakeNum+1];
-                                mainClass._mission.publish(missionStr);
-                                ROS_INFO("Mission [%s] published!", missionStr.data.c_str());
 
-                                mainClass._where2go.publish(cake_picked[cakeNum]);
-                                ROS_INFO("Heading over to x:[%.3f] y:[%.3f]", cake_picked[cakeNum].pose.position.x, cake_picked[cakeNum].pose.position.y);
-                                moving = true;
-                            }
-                            else if (arrived)
-                            {
-                                arrived = false;
-                                missionStr.data.at(0) = 'c';
-                                mainClass._mission.publish(missionStr);
-                                ROS_INFO("Mission [%s] published!", missionStr.data.c_str());
-                                doing = true;
-                                startMissionTime = ros::Time::now().toSec();
-                            }
-                            else if (mission_success)
-                            {
-                                mission_success = false;
-                                gotCake++;
-                                if (cakeNum < 2)
-                                {
-                                    cakeNum++;
+                                    mainClass._where2go.publish(cake_picked[cakeNum]);
+                                    ROS_INFO("Heading over to x:[%.3f] y:[%.3f]", cake_picked[cakeNum].pose.position.x, cake_picked[cakeNum].pose.position.y);
+                                    moving = true;
                                 }
-                                else
+                                else if (arrived)
                                 {
-                                    now_Mission = CHERRY;
-                                    missionStr.data = "h0";
+                                    arrived = false;
+                                    missionStr.data.at(0) = 'c';
                                     mainClass._mission.publish(missionStr);
                                     ROS_INFO("Mission [%s] published!", missionStr.data.c_str());
+                                    doing = true;
+                                    startMissionTime = ros::Time::now().toSec();
+                                }
+                                else if (mission_success)
+                                {
+                                    mission_success = false;
+                                    gotCake++;
+                                    if (cakeNum < 2)
+                                    {
+                                        cakeNum++;
+                                    }
+                                    else
+                                    {
+                                        now_Mission = CHERRY;
+                                        missionStr.data = "h0";
+                                        mainClass._mission.publish(missionStr);
+                                        ROS_INFO("Mission [%s] published!", missionStr.data.c_str());
+                                    }
                                 }
                             }
                         }
