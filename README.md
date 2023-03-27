@@ -41,6 +41,6 @@ small
     
 ## 5. Bug that hasn't been fixed
 
-#### 1. safest but looking for shortest distance
-#### 2. sometimes cherry won't find the closest side
-#### 3. sometimes cherry again will do the cherry side that has been done (not important)
+#### 1. Safest but looking for shortest distance will sometimes plan a strange looking route.
+#### 2. Sometimes cherry won't find the closest side.
+#### 3. Sometimes cherry again will do the cherry side that has been done. (not important)
