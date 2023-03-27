@@ -15,9 +15,13 @@ from geometry_msgs.msg import Quaternion
 import math
 from Eurobot2023_main_test.srv import *
 
-point = [[2.775, 0.225, 225], [0.225, 1.775, 45]]
+point = [[[[2.875, 1.875, 135], [2.775, 1.775, 135], [2.825, 1.825, 270], [2.725, 1.725, 270]] # B4
+        , [[0.125, 0.125, 315], [0.225, 0.225, 315], [0.175, 0.175, 90], [0.275, 0.275, 90]]]  # B0
+        ,[[[2.875, 0.125, 225], [2.775, 0.225, 225], [2.825, 0.175, 90], [2.725, 0.275, 90]]   # G3
+        , [[0.125, 1.875, 45], [0.225, 1.775, 45], [0.175, 1.825, 270], [0.275, 1.725, 270]]]] # G0
 
 robotNum = 0
+side = 0
 absAng = [0, 0]
 fullness = [0, 0, 0, 0]
 
@@ -75,30 +79,42 @@ def quaternion2euler(x, y, z, w):
         return yaw_z / math.pi * 180 # in radians
 
 def listener():
+    global side
     rospy.init_node("release")
+    side = rospy.get_param('side')
     rospy.Service('release'+str(robotNum), release, handle_release)
     rospy.Subscriber("/donefullness"+str(robotNum), Int32MultiArray, mission_callback)
     rospy.spin()
 
 def publisher(num):
-    for i in range(4):
-        if fullness[i] == 0:
-            ang = (point[num][2] - i*90) * math.pi / 180
-            break
-    robotAng = euler2quaternion(0, 0, ang)
+    global robotPose
 
-    robotPose.header.frame_id = "robot" + str(robotNum+1) + "/map"
+    for i in range(4):
+            if fullness[i] == 0:
+                 empty = i
+                 break
+    # print(empty)
+    if empty < 2:
+        robotPose.header.frame_id = str(empty+1) + str(empty+2)
+    elif empty == 2:
+         robotPose.header.frame_id = '30'
+    elif empty == 3:
+         robotPose.header.frame_id = '01'
     robotPose.header.stamp = rospy.Time.now()
 
-    for j in range(4):
+    for i in range(4):
+        
+        ang = (point[side][num][i][2] - empty*90) * math.pi / 180
+        robotAng = euler2quaternion(0, 0, ang)
+    
         pose = Pose()
-        pose.position.x = point[num][0]
-        pose.position.y = point[num][1]
+        pose.position.x = point[side][num][i][0]
+        pose.position.y = point[side][num][i][1]
         pose.orientation.x = robotAng.x
         pose.orientation.y = robotAng.y
         pose.orientation.z = robotAng.z
         pose.orientation.w = robotAng.w
-        robotPose.poses.insert(0, pose)
+        robotPose.poses.append(pose)
 
 if __name__=="__main__":
     try:

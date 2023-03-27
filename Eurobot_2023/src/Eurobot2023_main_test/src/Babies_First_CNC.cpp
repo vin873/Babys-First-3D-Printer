@@ -43,10 +43,10 @@ enum Mode
 
 // Global Variables
 
-int side = 1; // 0 for blue, 1 for green
+int side = 0; // 0 for blue, 1 for green
 int robot = 0; // 0 for big, 1 for small
 int cakeNum = 0;
-int gotCake = 0;
+int reCake = 0;
 int cherryNum = 0;
 int who_basket = -1;
 int now_release = -1;
@@ -82,26 +82,35 @@ bool printOnce = false;
 
 string id;
 string cid;
-string id_frame  = "robot"+to_string(robot+1)+"/map";
+string rid;
+string id_frame  = "";
+string dock_id_frame  = "dock";
 
 std_msgs::Int32 release;
 std_msgs::Int32 basket_robot;
 std_msgs::Bool finish_mission;
 std_msgs::String missionStr;
 
-geometry_msgs::PoseStamped cake_picked[3];
+geometry_msgs::PoseStamped cake_picked[6];
 geometry_msgs::PoseStamped cherry_picked[2];
 geometry_msgs::PoseStamped basket_point[2];
 geometry_msgs::PoseStamped release_point[4];
-geometry_msgs::PoseStamped home;
+geometry_msgs::PoseStamped home[2];
 
 class mainProgram
 {
 public:
 
-    void poseStamped_set(geometry_msgs::PoseStamped &pos, float x, float y, float z, float w)
+    void poseStamped_set(bool dock,geometry_msgs::PoseStamped &pos, float x, float y, float z, float w)
     {
-        pos.header.frame_id = id_frame;
+        if (dock)
+        {
+            pos.header.frame_id = dock_id_frame;
+        }
+        else
+        {
+            pos.header.frame_id = id_frame;
+        }
         pos.header.stamp = ros::Time::now();
         pos.pose.position.x = x;
         pos.pose.position.y = y;
@@ -125,7 +134,7 @@ public:
     {
         for (int i = 0;i < 4;i++)
         {
-            poseStamped_set(release_point[i], msg->poses[i].position.x, msg->poses[i].position.y, msg->poses[i].orientation.z, msg->poses[i].orientation.w);
+            poseStamped_set(0, release_point[i], msg->poses[i].position.x, msg->poses[i].position.y, msg->poses[i].orientation.z, msg->poses[i].orientation.w);
         }
         got_release_point = true;
         // ROS_INFO("release_point got!");
@@ -273,9 +282,10 @@ int main(int argc, char **argv)
                     release.data = 0;
                     finish_mission.data = false;
 
-                    mainClass.poseStamped_set(basket_point[0], 0.225, 0.225, 0, 1);
-                    mainClass.poseStamped_set(basket_point[1], 0.225, 1.775, 0, 1);
-                    mainClass.poseStamped_set(home, 1.125, 0.020, 0, 1);
+                    mainClass.poseStamped_set(0, basket_point[0], 0.225, 0.225, 0, 1);
+                    mainClass.poseStamped_set(0, basket_point[1], 0.225, 1.775, 0, 1);
+                    mainClass.poseStamped_set(0, home[0], 1.125, 1.680, 0, 1);
+                    mainClass.poseStamped_set(0, home[1], 1.125, 0.320, 0, 1);
                 }
                 printOnce = true;
 
@@ -290,9 +300,9 @@ int main(int argc, char **argv)
                     if (srv.response.picked.header.frame_id != "")
                     {
                         id = srv.response.picked.header.frame_id;
-                        for (int i = 0;i < 3;i++)
+                        for (int i = 0;i < 6;i++)
                         {
-                            mainClass.poseStamped_set(cake_picked[i], srv.response.picked.poses[i].position.x, srv.response.picked.poses[i].position.y, srv.response.picked.poses[i].orientation.z, srv.response.picked.poses[i].orientation.w);
+                            mainClass.poseStamped_set(i%2, cake_picked[i], srv.response.picked.poses[i].position.x, srv.response.picked.poses[i].position.y, srv.response.picked.poses[i].orientation.z, srv.response.picked.poses[i].orientation.w);
                         }
                         got_cake_picked = true;
                         cakeTime = ros::Time::now();
@@ -306,6 +316,10 @@ int main(int argc, char **argv)
                 {
                     initialTime = ros::Time::now();
                     ROS_WARN("RUN");
+                    // for (int i = 0;i < 6;i++)
+                    // {
+                    //     cout << "i : " << i << "  x : " << cake_picked[i].pose.position.x << "  y : " << cake_picked[i].pose.position.y << endl;
+                    // }
                 }
                 printOnce = true;
 
@@ -332,9 +346,9 @@ int main(int argc, char **argv)
                             if (srv.response.picked.header.frame_id != "")
                             {
                                 id = srv.response.picked.header.frame_id;
-                                for (int i = 0;i < 3;i++)
+                                for (int i = 0;i < 6;i++)
                                 {
-                                    mainClass.poseStamped_set(cake_picked[i], srv.response.picked.poses[i].position.x, srv.response.picked.poses[i].position.y, srv.response.picked.poses[i].orientation.z, srv.response.picked.poses[i].orientation.w);
+                                    mainClass.poseStamped_set(i%2, cake_picked[i], srv.response.picked.poses[i].position.x, srv.response.picked.poses[i].position.y, srv.response.picked.poses[i].orientation.z, srv.response.picked.poses[i].orientation.w);
                                 }
                                 got_cake_picked = true;
                                 cakeTime = ros::Time::now();
@@ -347,9 +361,9 @@ int main(int argc, char **argv)
                         {
                             if (cake_picked[cakeNum].pose.position.x < 0)
                             {
-                                if (cakeNum < 2)
+                                if (cakeNum < 4)
                                     {
-                                        cakeNum++;
+                                        cakeNum += 2;
                                     }
                                     else
                                     {
@@ -363,9 +377,9 @@ int main(int argc, char **argv)
                                 if (route_failed)
                                 {
                                     route_failed = false;
-                                    if (cakeNum < 2)
+                                    if (cakeNum < 5)
                                     {
-                                        cakeNum++;
+                                        cakeNum += 2;
                                     }
                                     else
                                     {
@@ -377,10 +391,13 @@ int main(int argc, char **argv)
                                 }
                                 else if (!arrived && !mission_success)
                                 {
-                                    missionStr.data = id[2*cakeNum];
-                                    missionStr.data += id[2*cakeNum+1];
-                                    mainClass._mission.publish(missionStr);
-                                    ROS_INFO("Mission [%s] published!", missionStr.data.c_str());
+                                    if (cakeNum % 2 == 0)
+                                    {
+                                        missionStr.data = id[cakeNum];
+                                        missionStr.data += id[cakeNum+1];
+                                        mainClass._mission.publish(missionStr);
+                                        ROS_INFO("Mission [%s] published!", missionStr.data.c_str());
+                                    }
 
                                     mainClass._where2go.publish(cake_picked[cakeNum]);
                                     ROS_INFO("Heading over to x:[%.3f] y:[%.3f]", cake_picked[cakeNum].pose.position.x, cake_picked[cakeNum].pose.position.y);
@@ -389,17 +406,26 @@ int main(int argc, char **argv)
                                 else if (arrived)
                                 {
                                     arrived = false;
-                                    missionStr.data.at(0) = 'c';
-                                    mainClass._mission.publish(missionStr);
-                                    ROS_INFO("Mission [%s] published!", missionStr.data.c_str());
-                                    doing = true;
-                                    startMissionTime = ros::Time::now().toSec();
+                                    if (cakeNum % 2 == 1)
+                                    {
+                                        missionStr.data.at(0) = 'c';
+                                        mainClass._mission.publish(missionStr);
+                                        ROS_INFO("Mission [%s] published!", missionStr.data.c_str());
+                                        doing = true;
+                                        startMissionTime = ros::Time::now().toSec();
+                                    }
+                                    else
+                                    {
+                                        if (cakeNum < 5)
+                                        {
+                                            cakeNum++;
+                                        }
+                                    }
                                 }
                                 else if (mission_success)
                                 {
                                     mission_success = false;
-                                    gotCake++;
-                                    if (cakeNum < 2)
+                                    if (cakeNum < 5)
                                     {
                                         cakeNum++;
                                     }
@@ -420,9 +446,9 @@ int main(int argc, char **argv)
                             arrived = false;
                             mission_success = false;
                             ROS_WARN("===== Mission [%s] overtime! =====", missionStr.data.c_str());
-                            if (cakeNum < 2)
+                            if (cakeNum < 5)
                             {
-                                cakeNum++;
+                                cakeNum += 2;
                             }
                             else
                             {
@@ -457,7 +483,7 @@ int main(int argc, char **argv)
                                 cid = srv.response.picked.header.frame_id;
                                 for (int i = 0;i < 2;i++)
                                 {
-                                    mainClass.poseStamped_set(cherry_picked[i], srv.response.picked.poses[i].position.x, srv.response.picked.poses[i].position.y, srv.response.picked.poses[i].orientation.z, srv.response.picked.poses[i].orientation.w);
+                                    mainClass.poseStamped_set(i%2, cherry_picked[i], srv.response.picked.poses[i].position.x, srv.response.picked.poses[i].position.y, srv.response.picked.poses[i].orientation.z, srv.response.picked.poses[i].orientation.w);
                                 }
                                 got_cherry_picked = true;
                             }
@@ -610,11 +636,13 @@ int main(int argc, char **argv)
                             {
                                 if (rsrv.response.picked.header.frame_id != "")
                                 {
+                                    rid = rsrv.response.picked.header.frame_id;
                                     for (int i = 0;i < 4;i++)
                                     {
-                                        mainClass.poseStamped_set(release_point[i], rsrv.response.picked.poses[i].position.x, rsrv.response.picked.poses[i].position.y, rsrv.response.picked.poses[i].orientation.z, rsrv.response.picked.poses[i].orientation.w);
+                                        mainClass.poseStamped_set(i, release_point[i], rsrv.response.picked.poses[i].position.x, rsrv.response.picked.poses[i].position.y, rsrv.response.picked.poses[i].orientation.z, rsrv.response.picked.poses[i].orientation.w);
                                     }
                                     got_release_point = true;
+                                    // cout << "rid : " << rid << endl;
                                 }
                             }
                         }
@@ -626,11 +654,13 @@ int main(int argc, char **argv)
                             {
                                 if (rsrv.response.picked.header.frame_id != "")
                                 {
+                                    rid = rsrv.response.picked.header.frame_id;
                                     for (int i = 0;i < 4;i++)
                                     {
-                                        mainClass.poseStamped_set(release_point[i], rsrv.response.picked.poses[i].position.x, rsrv.response.picked.poses[i].position.y, rsrv.response.picked.poses[i].orientation.z, rsrv.response.picked.poses[i].orientation.w);
+                                        mainClass.poseStamped_set(i, release_point[i], rsrv.response.picked.poses[i].position.x, rsrv.response.picked.poses[i].position.y, rsrv.response.picked.poses[i].orientation.z, rsrv.response.picked.poses[i].orientation.w);
                                     }
                                     got_release_point = true;
+                                    // cout << "rid : " << rid << endl;
                                 }
                             }
                         }
@@ -641,25 +671,49 @@ int main(int argc, char **argv)
                         {
                             if (!arrived && !mission_success)
                             {
-                                mainClass._where2go.publish(release_point[gotCake]);
-                                ROS_INFO("Heading over to x:[%.3f] y:[%.3f]", release_point[gotCake].pose.position.x, release_point[gotCake].pose.position.y);
+                                mainClass._where2go.publish(release_point[reCake]);
+                                ROS_INFO("Heading over to x:[%.3f] y:[%.3f]", release_point[reCake].pose.position.x, release_point[reCake].pose.position.y);
                                 moving = true;
                             }
                             else if (arrived)
                             {
                                 arrived = false;
-                                missionStr.data = "o0";
-                                mainClass._mission.publish(missionStr);
-                                ROS_INFO("Mission [%s] published!", missionStr.data.c_str());
+                                if (reCake == 0)
+                                {
+                                    missionStr.data = 'o';
+                                    missionStr.data += rid[0];
+                                }
+                                else if (reCake == 1)
+                                {
+                                    missionStr.data.at(0) = 'c';
+                                    mainClass._mission.publish(missionStr);
+                                }
+                                else if (reCake == 2)
+                                {
+                                    missionStr.data = 'o';
+                                    missionStr.data += rid[1];
+                                    mainClass._mission.publish(missionStr);
+                                    ROS_INFO("Mission [%s] published!", missionStr.data.c_str());
+                                    missionStr.data.at(1) = char(int(rid[1])+1);
+                                }
+                                else if (reCake == 3)
+                                {
+                                    missionStr.data.at(0) = 'c';
+                                    mainClass._mission.publish(missionStr);
+                                    ROS_INFO("Mission [%s] published!", missionStr.data.c_str());
+                                    missionStr.data.at(1) = char(int(rid[1]));
+                                }
                                 doing = true;
                                 startMissionTime = ros::Time::now().toSec();
+                                mainClass._mission.publish(missionStr);
+                                ROS_INFO("Mission [%s] published!", missionStr.data.c_str());
                             }
                             else if (mission_success)
                             {
                                 mission_success = false;
-                                if (gotCake > 0)
+                                if (reCake < 3)
                                 {
-                                    gotCake--;
+                                    reCake++;
                                 }
                                 else
                                 {
@@ -689,8 +743,8 @@ int main(int argc, char **argv)
                     {
                         if (!arrived)
                         {
-                            mainClass._where2go.publish(home);
-                            ROS_INFO("Heading over to x:[%.3f] y:[%.3f]", home.pose.position.x, home.pose.position.y);
+                            mainClass._where2go.publish(home[side]);
+                            ROS_INFO("Heading over to x:[%.3f] y:[%.3f]", home[side].pose.position.x, home[side].pose.position.y);
                             moving = true;
                         }
                         else
