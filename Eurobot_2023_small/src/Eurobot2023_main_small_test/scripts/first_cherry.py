@@ -17,7 +17,7 @@ cherries = [[[100, 900], [300, 900]], [[1350, 1885], [1650, 1885]], [[2700, 900]
 cherryE = [1, 1, 1, 1]
 
 # subscribe each enemy's pos
-enemies = [[1125, 1775], [1875, 225]]
+enemies = [[[1125, 225], [1875, 1775]], [[1125, 1775], [1875, 225]]]
 # subscribe our robots pos
 startPos = [[-1, -1],[-1, -1]]
 
@@ -26,6 +26,7 @@ tempSide = [[[-1, -1], [-1, -1]], [[-1, -1], [-1, -1]]]
 used = []
 
 robotNum = 1
+side = 0
 robotPose = PoseArray()
 pickedSide = [[[-1, -1], [-1, -1]], [[-1, -1], [-1, -1]]]
 
@@ -82,7 +83,7 @@ def closerEnemy(target):
     global enemies
     speed = 0.9  # enemy/our
     min = 99999
-    for enemy in enemies:
+    for enemy in enemies[side]:
         if enemy != [-1, -1]:
             if min > euclidean(enemy, target) / speed:
                 min = euclidean(enemy, target) / speed
@@ -108,7 +109,9 @@ def where2suck(pos, num):
     return tempSide[num]
 
 def listener():
+    global side
     rospy.init_node("first_cherry")
+    side = rospy.get_param('side')
     rospy.Service('cherry'+str(robotNum), cherry, handle_cherry)
     rospy.Subscriber("/cherryExistence", Int32MultiArray, cherryE_callback)
     rospy.Subscriber("/robot1/odom", Odometry, startPos1_callback)
