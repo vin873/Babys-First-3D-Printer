@@ -35,4 +35,4 @@ big
 small
 
     Eurobot2023_main_small_test
-    mainClass.poseStamped_set(home, 1.125, 0.420, 0, 1);
+    mainClass.poseStamped_set(home, 1.125, 0.320, 0, 1);
