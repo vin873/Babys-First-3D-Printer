@@ -49,3 +49,4 @@ small
 ## 6. Navigation
 
 https://well-season-c5b.notion.site/a0708dcd585249ecae95b1ce3764befc
+navigation_main hasn't been uploaded!!!
