@@ -20,7 +20,7 @@ point = [[[[2.875, 1.875, 135], [2.775, 1.775, 135], [2.825, 1.825, 270], [2.725
         ,[[[2.875, 0.125, 225], [2.775, 0.225, 225], [2.825, 0.175, 90], [2.725, 0.275, 90]]   # G3
         , [[0.125, 1.875, 45], [0.225, 1.775, 45], [0.175, 1.825, 270], [0.275, 1.725, 270]]]] # G0
 
-robotNum = 1
+robotNum = 0
 side = 0
 absAng = [0, 0]
 fullness = [0, 0, 0, 0]
@@ -79,9 +79,10 @@ def quaternion2euler(x, y, z, w):
         return yaw_z / math.pi * 180 # in radians
 
 def listener():
-    global side
+    global side, robotNum
     rospy.init_node("release")
     side = rospy.get_param('side')
+    robotNum = rospy.get_param('robot')
     rospy.Service('release'+str(robotNum), release, handle_release)
     rospy.Subscriber("/donefullness"+str(robotNum), Int32MultiArray, mission_callback)
     rospy.spin()

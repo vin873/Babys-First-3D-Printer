@@ -10,7 +10,7 @@ done = Int32MultiArray()
 done2 = Int32MultiArray()
 arr = [0, 0, 0, 0, 0]
 arr2 = [1, 1, 1, 1]
-robotNum = 1
+robotNum = 0
 
 startPos = [[-1, -1], [-1, -1]]
 
@@ -41,7 +41,7 @@ def mission_callback(msg):
         publisher(1)
     elif msg.data[0] == 'u':
         arr[0] = 1
-        publisher(3)
+        publisher(5)
     elif msg.data[0] == 'f' or msg.data[0] == 'd':
         arr[0] = 1
     
@@ -57,7 +57,9 @@ def startPos2_callback(msg):
     startPos[1][1] = msg.pose.pose.position.y * 1000
 
 def listener():
+    global robotNum
     rospy.init_node("ultra_mission_feedback")
+    robotNum = rospy.get_param('robot')
     rospy.Subscriber("/robot1/odom", Odometry, startPos1_callback)
     rospy.Subscriber("/robot2/odom", Odometry, startPos2_callback)
     rospy.Subscriber("/cherryExistence", Int32MultiArray, cherryE_callback)

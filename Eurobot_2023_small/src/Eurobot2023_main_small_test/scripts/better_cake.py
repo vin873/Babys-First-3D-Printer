@@ -25,7 +25,7 @@ for i in range(3):
     tempAllCakes.append([[[-1, -1], [-1, -1], [-1, -1], [-1, -1]], [[-1, -1], [-1, -1], [-1, -1], [-1, -1]]])
 
 # subscribe each enemy's pos
-enemies = [[[1125, 225], [1875, 1775]], [[1125, 1775], [1875, 225]]]
+enemies = [[-1, -1], [-1, -1]]
 # subscribe our robots pos
 startPos = [[-1, -1], [-1, -1]]
 absAng = [0, 0]
@@ -41,7 +41,7 @@ minAngle = 360
 outAngle = [[0, 0, 0], [0, 0, 0]]
 dockDis = 0.100
 
-robotNum = 1
+robotNum = 0
 side = 0
 position = [-1, -1]
 preposition = [-1, -1]
@@ -63,6 +63,16 @@ def startPos2_callback(msg):
     startPos[1][0] = msg.pose.pose.position.x * 1000
     startPos[1][1] = msg.pose.pose.position.y * 1000
     absAng[1] = quaternion2euler(msg.pose.pose.orientation.x, msg.pose.pose.orientation.y, msg.pose.pose.orientation.z, msg.pose.pose.orientation.w)
+
+def enemiesPos1_callback(msg):
+    global enemies
+    enemies[0][0] = msg.pose.pose.position.x * 1000
+    enemies[0][1] = msg.pose.pose.position.y * 1000
+
+def enemiesPos2_callback(msg):
+    global enemies
+    enemies[1][0] = msg.pose.pose.position.x * 1000
+    enemies[1][1] = msg.pose.pose.position.y * 1000
 
 def allCakes_callback(msg):
     global allCakes
@@ -203,7 +213,7 @@ def closerEnemy(target):
     global enemies
     speed = 0.9  # enemy/our
     min = 99999
-    for enemy in enemies[side]:
+    for enemy in enemies:
         if enemy != [-1, -1]:
             if min > euclidean(enemy, target) / speed:
                 min = euclidean(enemy, target) / speed
@@ -238,11 +248,11 @@ def where2go(pos, num):
         return []
     tempMin = 99999
     for enemy in range(2):
-        if enemies[side][enemy] != [-1, -1]:
+        if enemies[enemy] != [-1, -1]:
             for i in range(3):
                 if got[num][i] != 1:
                     for target in range(4):
-                        if euclidean(pos, allCakes[i][target]) < euclidean(enemies[side][enemy], allCakes[i][target]) and allCakes[i][target] != [-1, -1]:
+                        if euclidean(pos, allCakes[i][target]) < euclidean(enemies[enemy], allCakes[i][target]) and allCakes[i][target] != [-1, -1]:
                             tempAllCakes[i][num][target] = allCakes[i][target]
 
     for i in used:
@@ -334,12 +344,15 @@ def where2go(pos, num):
     currMin[num] = tempMin
 
 def listener():
-    global side
+    global side, robotNum
     rospy.init_node("better_cake")
     side = rospy.get_param('side')
+    robotNum = rospy.get_param('robot')
     rospy.Service('cake'+str(robotNum), cake, handle_cake)
     rospy.Subscriber("/robot1/odom", Odometry, startPos1_callback)
     rospy.Subscriber("/robot2/odom", Odometry, startPos2_callback)
+    rospy.Subscriber("/rival1/odom", Odometry, enemiesPos1_callback)
+    rospy.Subscriber("/rival2/odom", Odometry, enemiesPos2_callback)
     rospy.Subscriber("/allCakes", PoseArray, allCakes_callback)
     rospy.spin()
 
@@ -361,8 +374,8 @@ def publisher():
     for i in range(3):
         tempAllCakes.append([[[-1, -1], [-1, -1], [-1, -1], [-1, -1]], [[-1, -1], [-1, -1], [-1, -1], [-1, -1]]])
 
-    if enemies[side][0] ==  [-1, -1] and enemies[side][1] ==  [-1, -1]:
-        enemies[side][0] = [99999, 99999]
+    if enemies[0] ==  [-1, -1] and enemies[1] ==  [-1, -1]:
+        enemies[0] = [99999, 99999]
 
     for robot in range(2):
         if robot != [-1, -1]:

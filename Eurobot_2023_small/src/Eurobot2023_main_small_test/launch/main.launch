@@ -1,9 +1,10 @@
 <launch>
   <param name="side" type="int" value="0" />
+  <param name="robot" type="int" value="1" />
   <node name="better_cake_small" pkg="Eurobot2023_main_small_test" type="better_cake.py" output="screen" />
   <node name="first_cherry_small" pkg="Eurobot2023_main_small_test" type="first_cherry.py" output="screen" />
   <node name="mission_callback_small" pkg="Eurobot2023_main_small_test" type="ultra_mission_feedback.py" output="screen" />
   <node name="release_small" pkg="Eurobot2023_main_small_test" type="release.py" output="screen" />
   <node name="main_small" pkg="Eurobot2023_main_small_test" respawn="false" type="Babies_First_CNC" output="screen" />
-  
+
 </launch>
