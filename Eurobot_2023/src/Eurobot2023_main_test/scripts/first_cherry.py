@@ -17,7 +17,7 @@ cherries = [[[100, 900], [300, 900]], [[1350, 1885], [1650, 1885]], [[2700, 900]
 cherryE = [1, 1, 1, 1]
 
 # subscribe each enemy's pos
-enemies = [[[1125, 225], [1875, 1775]], [[1125, 1775], [1875, 225]]]
+enemies = [[-1, -1],[-1, -1]]
 # subscribe our robots pos
 startPos = [[-1, -1],[-1, -1]]
 
@@ -43,6 +43,16 @@ def startPos2_callback(msg):
     global startPos
     startPos[1][0] = msg.pose.pose.position.x * 1000
     startPos[1][1] = msg.pose.pose.position.y * 1000
+
+def enemiesPos1_callback(msg):
+    global enemies
+    enemies[0][0] = msg.pose.pose.position.x * 1000
+    enemies[0][1] = msg.pose.pose.position.y * 1000
+
+def enemiesPos2_callback(msg):
+    global enemies
+    enemies[1][0] = msg.pose.pose.position.x * 1000
+    enemies[1][1] = msg.pose.pose.position.y * 1000
 
 def cherryPublish():
     global robotPose, pickedSide
@@ -83,7 +93,7 @@ def closerEnemy(target):
     global enemies
     speed = 0.9  # enemy/our
     min = 99999
-    for enemy in enemies[side]:
+    for enemy in enemies:
         if enemy != [-1, -1]:
             if min > euclidean(enemy, target) / speed:
                 min = euclidean(enemy, target) / speed
@@ -109,13 +119,16 @@ def where2suck(pos, num):
     return tempSide[num]
 
 def listener():
-    global side
+    global side, robotNum
     rospy.init_node("first_cherry")
     side = rospy.get_param('side')
+    robotNum = rospy.get_param('robot')
     rospy.Service('cherry'+str(robotNum), cherry, handle_cherry)
     rospy.Subscriber("/cherryExistence", Int32MultiArray, cherryE_callback)
     rospy.Subscriber("/robot1/odom", Odometry, startPos1_callback)
     rospy.Subscriber("/robot2/odom", Odometry, startPos2_callback)
+    rospy.Subscriber("/rival1/odom", Odometry, enemiesPos1_callback)
+    rospy.Subscriber("/rival2/odom", Odometry, enemiesPos2_callback)
     rospy.spin()
 
 def publisher():

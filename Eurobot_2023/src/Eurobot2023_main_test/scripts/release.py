@@ -79,9 +79,10 @@ def quaternion2euler(x, y, z, w):
         return yaw_z / math.pi * 180 # in radians
 
 def listener():
-    global side
+    global side, robotNum
     rospy.init_node("release")
     side = rospy.get_param('side')
+    robotNum = rospy.get_param('robot')
     rospy.Service('release'+str(robotNum), release, handle_release)
     rospy.Subscriber("/donefullness"+str(robotNum), Int32MultiArray, mission_callback)
     rospy.spin()

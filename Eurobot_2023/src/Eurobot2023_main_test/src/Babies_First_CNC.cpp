@@ -1,3 +1,14 @@
+//        _____
+//       /  /::\       ___           ___
+//      /  /:/\:\     /  /\         /  /\
+//     /  /:/  \:\   /  /:/        /  /:/
+//    /__/:/ \__\:| /__/::\       /  /:/
+//    \  \:\ /  /:/ \__\/\:\__   /  /::\
+//     \  \:\  /:/     \  \:\/\ /__/:/\:\
+//      \  \:\/:/       \__\::/ \__\/  \:\
+//       \  \::/        /__/:/       \  \:\
+//        \__\/         \__\/         \__\/
+
 #include <ros/ros.h>
 #include <std_msgs/Bool.h>
 #include <std_msgs/String.h>
@@ -15,6 +26,7 @@
 #include <iostream>
 #include <stdlib.h>
 #include <math.h>
+#include <std_srvs/Empty.h>
 
 using namespace std;
 
@@ -83,7 +95,7 @@ bool printOnce = false;
 string id;
 string cid;
 string rid;
-string id_frame  = "";
+string id_frame  = "path";
 string dock_id_frame  = "dock";
 
 std_msgs::Int32 release;
@@ -100,6 +112,28 @@ geometry_msgs::PoseStamped home[2];
 class mainProgram
 {
 public:
+
+    void initialize()
+    {
+        std_srvs::Empty empt;
+        updateParams(empt.request, empt.response);
+    }
+
+    void updateParams(std_srvs::Empty::Request& req, std_srvs::Empty::Response& res)
+    {
+        nh.getParam("robot", robot);
+        nh.getParam("side", side);
+        _release = nh.advertise<std_msgs::Int32>("release"+to_string(robot), 1000);
+        _another_release = nh.subscribe<std_msgs::Int32>("release"+to_string(!bool(robot)), 1000, &mainProgram::anothere_callback, this);
+        _cake_client = nh.serviceClient<Eurobot2023_main_test::cake>("cake"+to_string(robot));
+        _cherry_client = nh.serviceClient<Eurobot2023_main_test::cherry>("cherry"+to_string(robot));
+        _release_client = nh.serviceClient<Eurobot2023_main_test::release>("release"+to_string(robot));
+        _where2go = nh.advertise<geometry_msgs::PoseStamped>("/robot"+to_string(robot+1)+"/mission", 1000);
+        _finishornot = nh.subscribe<std_msgs::Bool>("/robot"+to_string(robot+1)+"/is_finish", 1000, &mainProgram::nav_callback, this);
+        _mission = nh.advertise<std_msgs::String>("mission"+to_string(robot), 1000);
+        _donefullness = nh.subscribe<std_msgs::Int32MultiArray>("donefullness"+to_string(robot), 1000, &mainProgram::done_fullness_callback, this);
+        _myPos = nh.subscribe<nav_msgs::Odometry>("/robot"+to_string(robot+1)+"/odom", 1000, &mainProgram::myPos_callback, this);
+    }
 
     void poseStamped_set(bool dock,geometry_msgs::PoseStamped &pos, float x, float y, float z, float w)
     {
@@ -228,8 +262,8 @@ public:
     ros::ServiceClient _release_client = nh.serviceClient<Eurobot2023_main_test::release>("release"+to_string(robot));
 
     // chassis
-    ros::Publisher _where2go = nh.advertise<geometry_msgs::PoseStamped>("/robot"+to_string(robot+1)+"/nav_goal", 1000);
-    ros::Subscriber _finishornot = nh.subscribe<std_msgs::Bool>("/robot"+to_string(robot+1)+"/finishornot", 1000, &mainProgram::nav_callback, this);
+    ros::Publisher _where2go = nh.advertise<geometry_msgs::PoseStamped>("/robot"+to_string(robot+1)+"/mission", 1000);
+    ros::Subscriber _finishornot = nh.subscribe<std_msgs::Bool>("/robot"+to_string(robot+1)+"/is_finish", 1000, &mainProgram::nav_callback, this);
 
     // mission
     ros::Publisher _mission = nh.advertise<std_msgs::String>("mission"+to_string(robot), 1000);
@@ -257,8 +291,9 @@ int main(int argc, char **argv)
 
     mainProgram mainClass;
 
-    mainClass.nh.getParam("robot", robot);
-    mainClass.nh.getParam("side", side);
+    // mainClass.nh.getParam("robot", robot);
+    // mainClass.nh.getParam("side", side);
+    mainClass.initialize();
 
     ros::Time initialTime = ros::Time::now();
     ros::Time cakeTime = ros::Time::now();
@@ -284,14 +319,18 @@ int main(int argc, char **argv)
 
                     mainClass.poseStamped_set(0, basket_point[0], 0.225, 0.225, 0, 1);
                     mainClass.poseStamped_set(0, basket_point[1], 0.225, 1.775, 0, 1);
-                    mainClass.poseStamped_set(0, home[0], 1.125, 1.680, 0, 1);
-                    mainClass.poseStamped_set(0, home[1], 1.125, 0.320, 0, 1);
+                    mainClass.poseStamped_set(0, home[0], 1.125, 1.980, 0, 1);
+                    mainClass.poseStamped_set(0, home[1], 1.125, 0.020, 0, 1);
                 }
                 printOnce = true;
 
                 if (start)
                 {
                     now_Status = RUN;
+                    moving = false;
+                    doing = false;
+                    arrived = false;
+                    mission_success = false;
                     printOnce = false; 
                 }
 
@@ -639,7 +678,7 @@ int main(int argc, char **argv)
                                     rid = rsrv.response.picked.header.frame_id;
                                     for (int i = 0;i < 4;i++)
                                     {
-                                        mainClass.poseStamped_set(i, release_point[i], rsrv.response.picked.poses[i].position.x, rsrv.response.picked.poses[i].position.y, rsrv.response.picked.poses[i].orientation.z, rsrv.response.picked.poses[i].orientation.w);
+                                        mainClass.poseStamped_set(i%2, release_point[i], rsrv.response.picked.poses[i].position.x, rsrv.response.picked.poses[i].position.y, rsrv.response.picked.poses[i].orientation.z, rsrv.response.picked.poses[i].orientation.w);
                                     }
                                     got_release_point = true;
                                     // cout << "rid : " << rid << endl;
@@ -657,7 +696,7 @@ int main(int argc, char **argv)
                                     rid = rsrv.response.picked.header.frame_id;
                                     for (int i = 0;i < 4;i++)
                                     {
-                                        mainClass.poseStamped_set(i, release_point[i], rsrv.response.picked.poses[i].position.x, rsrv.response.picked.poses[i].position.y, rsrv.response.picked.poses[i].orientation.z, rsrv.response.picked.poses[i].orientation.w);
+                                        mainClass.poseStamped_set(i%2, release_point[i], rsrv.response.picked.poses[i].position.x, rsrv.response.picked.poses[i].position.y, rsrv.response.picked.poses[i].orientation.z, rsrv.response.picked.poses[i].orientation.w);
                                     }
                                     got_release_point = true;
                                     // cout << "rid : " << rid << endl;
