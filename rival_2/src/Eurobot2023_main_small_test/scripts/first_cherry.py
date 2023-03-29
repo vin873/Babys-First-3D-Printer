@@ -95,27 +95,34 @@ def closerEnemy(target):
     min = 99999
     for enemy in enemies:
         if enemy != [-1, -1]:
-            if min > euclidean(enemy, target) / speed:
-                min = euclidean(enemy, target) / speed
+            for i in target:
+                if min > euclidean(enemy, i) / speed:
+                    min = euclidean(enemy, i) / speed
     return min
 
 def where2suck(pos, num):
     global tempMin, tempSide, used
     tempMin[num] = 99999
+    tempChoice = [-1, -1]
     tempSide[num] = [[-1, -1], [-1, -1]]
 
     for sides in cherries:
         if (cherries.index(sides) < 4 and cherryE[cherries.index(sides)] != 0) or (cherries.index(sides) == 4 and cherryE[0] != 0) or (cherries.index(sides) == 5 and cherryE[2] != 0):
             for cherrySide in sides:
                 if cherrySide not in used:
-                    dis2cherry = euclidean(pos, cherrySide) - closerEnemy(cherrySide)
+                    dis2cherry = euclidean(pos, cherrySide) - closerEnemy(sides)
                     if dis2cherry < tempMin[num]:
                         tempMin[num] = dis2cherry
-                        tempSide[num] = sides
-                        if euclidean(pos, cherrySide) > euclidean(pos, sides[not bool(sides.index(cherrySide))]):
-                            cherrySide = sides[not bool(sides.index(cherrySide))]
-                        if cherrySide == tempSide[num][1]:
-                            tempSide[num][0], tempSide[num][1] = tempSide[num][1], tempSide[num][0]
+                        tempSide[num] = list(sides)
+                        tempChoice = list(cherrySide)
+    for i in cherries:
+        if tempChoice in i:
+            if euclidean(pos, tempChoice) > euclidean(pos, i[int(not bool(i.index(tempChoice)))]):
+                tempChoice = i[int(not bool(i.index(tempChoice)))]
+            if tempChoice == tempSide[num][1]:
+                tempSide[num][0], tempSide[num][1] = tempSide[num][1], tempSide[num][0]
+            break
+
     return tempSide[num]
 
 def listener():
@@ -133,7 +140,7 @@ def listener():
 
 def publisher():
     # print(cherryE)
-    global robotPose, used
+    global robotPose, used, pickedSide
     for robot in startPos:
         if robot != [-1, -1]:
             pickedSide[startPos.index(robot)] = where2suck(robot, startPos.index(robot))
