@@ -235,7 +235,7 @@ def safest(pos, num):
                 if target not in used and target != [-1, -1]:
                     if tempColorMin > euclidean(pos, target) - closerEnemy(target):
                         tempColorMin = euclidean(pos, target) - closerEnemy(target)
-                        tempColorPicked = target
+                        tempColorPicked = list(target)
     return tempColorPicked
 
 def where2go(pos, num):
@@ -253,7 +253,7 @@ def where2go(pos, num):
                 if got[num][i] != 1:
                     for target in range(4):
                         if euclidean(pos, allCakes[i][target]) < euclidean(enemies[enemy], allCakes[i][target]) and allCakes[i][target] != [-1, -1]:
-                            tempAllCakes[i][num][target] = allCakes[i][target]
+                            tempAllCakes[i][num][target] = list(allCakes[i][target])
 
     for i in used:
         for j in range(3):
@@ -311,7 +311,7 @@ def where2go(pos, num):
             if minDis > howLong(order):
                 minDis = howLong(order)
                 order.remove(pos)
-                picked[num] = order
+                picked[num] = list(order)
         for i in range(3):
             if len(picked[num]) < 3:
                 picked[num].append([-1, -1])
