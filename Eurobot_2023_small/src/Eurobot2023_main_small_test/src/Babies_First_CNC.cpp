@@ -527,12 +527,17 @@ int main(int argc, char **argv)
                                     mainClass.poseStamped_set(i%2, cherry_picked[i], srv.response.picked.poses[i].position.x, srv.response.picked.poses[i].position.y, srv.response.picked.poses[i].orientation.z, srv.response.picked.poses[i].orientation.w);
                                 }
                                 got_cherry_picked = true;
+                                cherryTime = ros::Time::now();
                             }
                         }
                     }
                     else if (got_cherry_picked)
                     {
-                        if (!moving && !doing)
+                        if (ros::Time::now().toSec() - cherryTime.toSec() >= 0.5 && cherryNum == 0 && moving && !doing)
+                        {
+                            got_cherry_picked = false;
+                        }
+                        else if (!moving && !doing)
                         {
                             if (route_failed)
                             {
