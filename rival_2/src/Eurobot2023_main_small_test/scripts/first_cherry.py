@@ -91,37 +91,74 @@ def cherryE_callback(msg):
 
 def closerEnemy(target):
     global enemies
-    speed = 0.9  # enemy/our
+    speed = 1  # enemy/our
     min = 99999
+    side = [-1, -1]
     for enemy in enemies:
         if enemy != [-1, -1]:
             for i in target:
                 if min > euclidean(enemy, i) / speed:
                     min = euclidean(enemy, i) / speed
-    return min
+                    side = list(i)
+    return min, side
 
 def where2suck(pos, num):
     global tempMin, tempSide, used
     tempMin[num] = 99999
     tempChoice = [-1, -1]
+    enemyChoice = [-1, -1]
     tempSide[num] = [[-1, -1], [-1, -1]]
 
-    for sides in cherries:
-        if (cherries.index(sides) < 4 and cherryE[cherries.index(sides)] != 0) or (cherries.index(sides) == 4 and cherryE[0] != 0) or (cherries.index(sides) == 5 and cherryE[2] != 0):
-            for cherrySide in sides:
-                if cherrySide not in used:
-                    dis2cherry = euclidean(pos, cherrySide) - closerEnemy(sides)
-                    if dis2cherry < tempMin[num]:
-                        tempMin[num] = dis2cherry
-                        tempSide[num] = list(sides)
-                        tempChoice = list(cherrySide)
-    for i in cherries:
-        if tempChoice in i:
-            if euclidean(pos, tempChoice) > euclidean(pos, i[int(not bool(i.index(tempChoice)))]):
-                tempChoice = i[int(not bool(i.index(tempChoice)))]
-            if tempChoice == tempSide[num][1]:
-                tempSide[num][0], tempSide[num][1] = tempSide[num][1], tempSide[num][0]
-            break
+    for sides in range(4):
+        if cherryE[sides] != 0 and cherries[sides][0] not in used:
+            if sides == 0 or sides == 4:
+                temp = list(cherries[0]) + list(cherries[4])
+                enenmyDis, enemyChoice = closerEnemy(temp)
+            elif side == 2 or side == 5:
+                temp = list(cherries[2]) + list(cherries[5])
+                enenmyDis, enemyChoice = closerEnemy(temp)
+            else:
+                enenmyDis, enemyChoice = closerEnemy(cherries[sides])
+            if euclidean(pos, enemyChoice) - enenmyDis < tempMin[num]:
+                    tempMin[num] = euclidean(pos, enemyChoice) - enenmyDis
+                    tempChoice = list(enemyChoice)
+                    tempSide[num] = list(cherries[sides])
+    # print(num, tempChoice, tempSide[num])
+    tM = 99999
+    for sides in range(6):
+        if tempChoice in cherries[sides]:
+            if sides == 0:
+                for j in range(2):
+                    if tM > euclidean(pos, cherries[4][j]):
+                        tM = euclidean(pos, cherries[4][j])
+                        tempChoice = list(cherries[4][j])
+                        tempSide[num] = list(cherries[4])
+            elif sides == 2:
+                for j in range(2):
+                    if tM > euclidean(pos, cherries[5][j]):
+                        tM = euclidean(pos, cherries[5][j])
+                        tempChoice = list(cherries[5][j])
+                        tempSide[num] = list(cherries[5])
+            elif sides == 4:
+                for j in range(2):
+                    if tM > euclidean(pos, cherries[0][j]):
+                        tM = euclidean(pos, cherries[0][j])
+                        tempChoice = list(cherries[0][j])
+                        tempSide[num] = list(cherries[0])
+            elif sides == 5:
+                for j in range(2):
+                    if tM > euclidean(pos, cherries[2][j]):
+                        tM = euclidean(pos, cherries[2][j])
+                        tempChoice = list(cherries[2][j])
+                        tempSide[num] = list(cherries[2])
+            for i in cherries[sides]:
+                if tM > euclidean(pos, i):
+                    tM = euclidean(pos, i)
+                    tempChoice = list(i)
+                    tempSide[num] = list(cherries[sides])
+    # print(tempChoice, tempSide)
+    if tempChoice == tempSide[num][1]:
+            tempSide[num][0], tempSide[num][1] = tempSide[num][1], tempSide[num][0]
 
     return tempSide[num]
 
@@ -159,6 +196,7 @@ def publisher():
             pickedSide[0] = where2suck(startPos[0], 0)
     
     robotPose.poses = []
+    print(pickedSide)
     cherryPublish()
 
 if __name__=="__main__":

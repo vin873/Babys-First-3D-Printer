@@ -9,7 +9,7 @@ from geometry_msgs.msg import PoseStamped
 
 side = 0
 
-rivalStartPos = [[[1.125, 1.775], [1.875, 0.225]], [[1.125, 0.225], [1.875, 1.775]]]
+rivalStartPos = [[[1.125, 1.825], [1.875, 0.175]], [[1.125, 0.175], [1.875, 1.825]]]
 
 def publisher():
     global side

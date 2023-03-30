@@ -60,6 +60,7 @@ int robot = 0; // 0 for big, 1 for small
 int cakeNum = 0;
 int reCake = 0;
 int cherryNum = 0;
+int cherryDelay = 2;
 int who_basket = -1;
 int now_release = -1;
 int now_Mission = CAKE;
@@ -76,7 +77,7 @@ double enemiesOri_z;
 double enemiesOri_w;
 double mission_timeOut;
 double startMissionTime;
-double go_home_time = 86.0;
+double go_home_time = 100.0;
 
 bool start = false;
 bool moving = false;
@@ -297,6 +298,7 @@ int main(int argc, char **argv)
 
     ros::Time initialTime = ros::Time::now();
     ros::Time cakeTime = ros::Time::now();
+    ros::Time cherryTime = ros::Time::now();
     Eurobot2023_main_small_test::rcake srv;
     // Main Node Update Frequency
     ros::Rate rate(20);
@@ -358,9 +360,7 @@ int main(int argc, char **argv)
                     // for (int i = 0;i < 6;i++)
                     // {
                     //     cout << "i : " << i << "  x : " << cake_picked[i].pose.position.x << "  y : " << cake_picked[i].pose.position.y << endl;
-                    //     cout << "frame_id : " << cake_picked[i].header.frame_id << endl;
                     // }
-                    // cout << cakeNum << endl;
                 }
                 printOnce = true;
 
@@ -439,7 +439,7 @@ int main(int argc, char **argv)
                                         mainClass._mission.publish(missionStr);
                                         ROS_INFO("Mission [%s] published!", missionStr.data.c_str());
                                     }
-                                    cout << cakeNum << endl;
+
                                     mainClass._where2go.publish(cake_picked[cakeNum]);
                                     ROS_INFO("Heading over to x:[%.3f] y:[%.3f]", cake_picked[cakeNum].pose.position.x, cake_picked[cakeNum].pose.position.y);
                                     moving = true;
@@ -515,7 +515,7 @@ int main(int argc, char **argv)
                         ROS_WARN("===== Time to Go Home !!! =====");
                         moving = false;
                     }
-                    else if (!got_cherry_picked)
+                    else if (ros::Time::now().toSec() - cherryTime.toSec() >= cherryDelay && !got_cherry_picked)
                     {
                         if (mainClass._cherry_client.call(srv))
                         {
@@ -527,12 +527,17 @@ int main(int argc, char **argv)
                                     mainClass.poseStamped_set(i%2, cherry_picked[i], srv.response.picked.poses[i].position.x, srv.response.picked.poses[i].position.y, srv.response.picked.poses[i].orientation.z, srv.response.picked.poses[i].orientation.w);
                                 }
                                 got_cherry_picked = true;
+                                cherryTime = ros::Time::now();
                             }
                         }
                     }
                     else if (got_cherry_picked)
                     {
-                        if (!moving && !doing)
+                        if (ros::Time::now().toSec() - cherryTime.toSec() >= 0.5 && cherryNum == 0 && moving && !doing)
+                        {
+                            got_cherry_picked = false;
+                        }
+                        else if (!moving && !doing)
                         {
                             if (route_failed)
                             {
@@ -550,11 +555,11 @@ int main(int argc, char **argv)
                                 arrived = false;
                                 if (cherryNum == 0)
                                 {
-                                    missionStr.data = "s0";
+                                    missionStr.data = "s"+cid;
                                 }
                                 else
                                 {
-                                    missionStr.data = "v"+cid;
+                                    missionStr.data = "v0";
                                 }
                                 mainClass._mission.publish(missionStr);
                                 ROS_INFO("Mission [%s] published!", missionStr.data.c_str());
@@ -606,6 +611,7 @@ int main(int argc, char **argv)
                         ROS_WARN("Cherry again !!!");
                         cherryNum = 0;
                         got_cherry_picked = false;
+                        cherryTime = ros::Time::now();
                     }
                     else
                     {
