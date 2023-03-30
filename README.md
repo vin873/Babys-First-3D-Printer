@@ -53,5 +53,20 @@ https://well-season-c5b.notion.site/a0708dcd585249ecae95b1ce3764befc
 navigation_main hasn't been uploaded!!!
 
 ## 7. map in rviz
-
-       <node pkg="tf" type="static_transform_publisher" name="quad_broadcaster" args="1.5 1 -0.01 0 0 -1 1 robot1/map quad 30" />
+    
+    # add in sim~.launch
+    <node name="publish_image" pkg="rviz_display" type="publish_image" output="screen"/>
+    <node pkg="tf" type="static_transform_publisher" name="quad_broadcaster" args="1.5 1 -0.01 0 0 -1 1 robot1/map quad 30" />
+    # add in .rviz and change Static map's alpha to 0
+    - Class: rviz_textured_quads/MeshDisplayCustom
+      Enabled: true
+      Image Topic: /robot1/Eurobot_Image
+      Meters per pixel: 0.001465
+      Name: MeshDisplayCustom
+      Quad Frame: quad
+      Value: true
+    - Alpha: 0.5
+      Cell Size: 0.05000000074505806
+      
+    
+    
