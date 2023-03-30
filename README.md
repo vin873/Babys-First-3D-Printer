@@ -66,8 +66,3 @@ navigation_main hasn't been uploaded!!!
       Name: MeshDisplayCustom
       Quad Frame: quad
       Value: true
-    - Alpha: 0.5
-      Cell Size: 0.05000000074505806
-      
-    
-    
