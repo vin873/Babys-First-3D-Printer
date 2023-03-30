@@ -38,6 +38,7 @@ fullness = [[0, 0, 0, 0], [0, 0, 0, 0]]
 tempFull = [[0, 0, 0, 0], [0, 0, 0, 0]]
 currMin = [99999, 99999]
 minAngle = 360
+headAng = -45
 outAngle = [[0, 0, 0], [0, 0, 0]]
 dockDis = 0.100
 
@@ -239,7 +240,7 @@ def safest(pos, num):
     return tempColorPicked
 
 def where2go(pos, num):
-    global picked, enemies, currMin, fullness, absAng, minAngle, used, outAngle, tempAllCakes, allCakes, tempGot
+    global picked, enemies, currMin, fullness, absAng, minAngle, used, outAngle, tempAllCakes, allCakes, tempGot, headAng
     
     # print(allCakes)
     tempGot = [[0, 0, 0], [0, 0, 0]]
@@ -334,7 +335,7 @@ def where2go(pos, num):
                 if abs(i) < abs(minAngle):
                     minAngle = i
                     minAngleNum = tAngles.index(i)
-            outAngle[num][j] = minAngle + tempAng[num]
+            outAngle[num][j] = minAngle + tempAng[num] + headAng
             # print(outAngle[num], tempAng[num], tAngles, minAngle, tAngle)
             tempAng[num] = outAngle[num][j]
             tempFull[num][minAngleNum] = j+1
