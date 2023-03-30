@@ -51,3 +51,7 @@ small
 https://well-season-c5b.notion.site/a0708dcd585249ecae95b1ce3764befc
 
 navigation_main hasn't been uploaded!!!
+
+## 7. map in rviz
+
+       <node pkg="tf" type="static_transform_publisher" name="quad_broadcaster" args="1.5 1 -0.01 0 0 -1 1 robot1/map quad 30" />
