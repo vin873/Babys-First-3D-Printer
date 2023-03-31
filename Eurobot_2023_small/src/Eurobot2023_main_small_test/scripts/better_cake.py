@@ -38,7 +38,7 @@ fullness = [[0, 0, 0, 0], [0, 0, 0, 0]]
 tempFull = [[0, 0, 0, 0], [0, 0, 0, 0]]
 currMin = [99999, 99999]
 minAngle = 360
-headAng = -45
+headAng = 0
 outAngle = [[0, 0, 0], [0, 0, 0]]
 dockDis = 0.100
 
