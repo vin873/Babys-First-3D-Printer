@@ -66,3 +66,15 @@ navigation_main hasn't been uploaded!!!
       Name: MeshDisplayCustom
       Quad Frame: quad
       Value: true
+
+## 8. Drive car
+
+    cd Eurobot_2023/src/Eurobot2023_main_test/src
+    python3 haha.py
+    
+  ## mode : p/d (path or dock)
+  ## robot : 1/2(our robot) 3/4(rival)
+  ## x : x position in meters
+  ## y : y position in meters
+  ## ang : robot's angle in degrees
+    
