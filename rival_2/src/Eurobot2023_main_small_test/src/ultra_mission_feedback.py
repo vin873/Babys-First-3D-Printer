@@ -33,11 +33,11 @@ def mission_callback(msg):
         publisher(1)
     elif msg.data[0] == 's':
         arr[0] = 1
+        arr2[int(msg.data[1])] = 0
+        publisher2()
         publisher(3)
     elif msg.data[0] == 'v':
         arr[0] = 1
-        arr2[int(msg.data[1])] = 0
-        publisher2()
         publisher(1)
     elif msg.data[0] == 'u':
         arr[0] = 1

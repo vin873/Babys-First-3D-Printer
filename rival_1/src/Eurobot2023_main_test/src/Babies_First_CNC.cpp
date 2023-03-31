@@ -89,6 +89,7 @@ bool got_cake_picked = false;
 bool got_cherry_picked = false;
 bool got_release_point = false;
 bool going_home = false;
+bool cherryE[4] = {1, 1, 1, 1};
 bool fullness[4] = {0, 0, 0, 0}; // {0, 90, 180, 270}
 bool plates[5] = {0, 0, 0, 0}; // x y
 bool printOnce = false;
@@ -230,6 +231,10 @@ public:
 
     void cherry_callback(const std_msgs::Int32MultiArray::ConstPtr &msg)
     {
+        for (int i = 0;i < 4;i++)
+        {
+            cherryE[i] = msg->data.at(i);
+        }
         ROS_WARN("Cherry update!");
     }
 
@@ -505,89 +510,101 @@ int main(int argc, char **argv)
                 case CHERRY:
                     
                     mission_timeOut = 10;
-                    if (ros::Time::now().toSec() - initialTime.toSec() >= go_home_time && !going_home)
+
+                    if (cherryE[0] != 0 || cherryE[1] != 0 || cherryE[2] != 0 || cherryE[3] != 0)
                     {
-                        moving = false;
-                        doing = false;
-                        arrived = false;
-                        mission_success = false;
-                        now_Mission = HOME;
-                        ROS_WARN("===== Time to Go Home !!! =====");
-                        moving = false;
-                    }
-                    else if (ros::Time::now().toSec() - cherryTime.toSec() >= cherryDelay && !got_cherry_picked)
-                    {
-                        if (mainClass._cherry_client.call(srv))
-                        {
-                            if (srv.response.picked.header.frame_id != "")
-                            {
-                                cid = srv.response.picked.header.frame_id;
-                                for (int i = 0;i < 2;i++)
-                                {
-                                    mainClass.poseStamped_set(i%2, cherry_picked[i], srv.response.picked.poses[i].position.x, srv.response.picked.poses[i].position.y, srv.response.picked.poses[i].orientation.z, srv.response.picked.poses[i].orientation.w);
-                                }
-                                got_cherry_picked = true;
-                                cherryTime = ros::Time::now();
-                            }
-                        }
-                    }
-                    else if (got_cherry_picked)
-                    {
-                        if (ros::Time::now().toSec() - cherryTime.toSec() >= 0.5 && cherryNum == 0 && moving && !doing)
-                        {
-                            got_cherry_picked = false;
-                        }
-                        else if (!moving && !doing)
-                        {
-                            if (route_failed)
-                            {
-                                route_failed = false;
-                                now_Mission = BASKET;
-                            }
-                            else if (!arrived && !mission_success)
-                            {
-                                mainClass._where2go.publish(cherry_picked[cherryNum]);
-                                ROS_INFO("Heading over to x:[%.3f] y:[%.3f]", cherry_picked[cherryNum].pose.position.x, cherry_picked[cherryNum].pose.position.y);
-                                moving = true;
-                            }
-                            else if (arrived)
-                            {
-                                arrived = false;
-                                if (cherryNum == 0)
-                                {
-                                    missionStr.data = "s"+cid;
-                                }
-                                else
-                                {
-                                    missionStr.data = "v0";
-                                }
-                                mainClass._mission.publish(missionStr);
-                                ROS_INFO("Mission [%s] published!", missionStr.data.c_str());
-                                doing = true;
-                                startMissionTime = ros::Time::now().toSec();
-                            }
-                            else if (mission_success)
-                            {
-                                mission_success = false;
-                                if (cherryNum < 1)
-                                {
-                                    cherryNum++;
-                                }
-                                else
-                                {
-                                    now_Mission = BASKET;
-                                }
-                            }
-                        }
-                        else if (doing && ros::Time::now().toSec() - startMissionTime >= mission_timeOut)
+                        if (ros::Time::now().toSec() - initialTime.toSec() >= go_home_time && !going_home)
                         {
                             moving = false;
                             doing = false;
                             arrived = false;
                             mission_success = false;
-                            ROS_WARN("===== Mission [%s] overtime! =====", missionStr.data.c_str());
-                            now_Mission = BASKET;
+                            now_Mission = HOME;
+                            ROS_WARN("===== Time to Go Home !!! =====");
                         }
+                        else if (ros::Time::now().toSec() - cherryTime.toSec() >= cherryDelay && !got_cherry_picked)
+                        {
+                            if (mainClass._cherry_client.call(srv))
+                            {
+                                if (srv.response.picked.header.frame_id != "")
+                                {
+                                    cid = srv.response.picked.header.frame_id;
+                                    for (int i = 0;i < 2;i++)
+                                    {
+                                        mainClass.poseStamped_set(i%2, cherry_picked[i], srv.response.picked.poses[i].position.x, srv.response.picked.poses[i].position.y, srv.response.picked.poses[i].orientation.z, srv.response.picked.poses[i].orientation.w);
+                                    }
+                                    got_cherry_picked = true;
+                                    cherryTime = ros::Time::now();
+                                }
+                            }
+                        }
+                        else if (got_cherry_picked)
+                        {
+                            if (ros::Time::now().toSec() - cherryTime.toSec() >= 0.3 && cherryNum == 0 && moving && !doing)
+                            {
+                                got_cherry_picked = false;
+                                moving = false;
+                            }
+                            else if (!moving && !doing)
+                            {
+                                if (route_failed)
+                                {
+                                    route_failed = false;
+                                    now_Mission = BASKET;
+                                }
+                                else if (!arrived && !mission_success)
+                                {
+                                    mainClass._where2go.publish(cherry_picked[cherryNum]);
+                                    ROS_INFO("Heading over to x:[%.3f] y:[%.3f]", cherry_picked[cherryNum].pose.position.x, cherry_picked[cherryNum].pose.position.y);
+                                    moving = true;
+                                }
+                                else if (arrived)
+                                {
+                                    arrived = false;
+                                    if (cherryNum == 0)
+                                    {
+                                        missionStr.data = "s"+cid;
+                                    }
+                                    else
+                                    {
+                                        missionStr.data = "v0";
+                                    }
+                                    mainClass._mission.publish(missionStr);
+                                    ROS_INFO("Mission [%s] published!", missionStr.data.c_str());
+                                    doing = true;
+                                    startMissionTime = ros::Time::now().toSec();
+                                }
+                                else if (mission_success)
+                                {
+                                    mission_success = false;
+                                    if (cherryNum < 1)
+                                    {
+                                        cherryNum++;
+                                    }
+                                    else
+                                    {
+                                        now_Mission = BASKET;
+                                    }
+                                }
+                            }
+                            else if (doing && ros::Time::now().toSec() - startMissionTime >= mission_timeOut)
+                            {
+                                moving = false;
+                                doing = false;
+                                arrived = false;
+                                mission_success = false;
+                                ROS_WARN("===== Mission [%s] overtime! =====", missionStr.data.c_str());
+                                now_Mission = BASKET;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        moving = false;
+                        doing = false;
+                        arrived = false;
+                        mission_success = false;
+                        now_Mission = BASKET;
                     }
                     break;
 
@@ -607,11 +624,18 @@ int main(int argc, char **argv)
                     }
                     else if (who_basket != robot)
                     {
-                        now_Mission = CHERRY;
-                        ROS_WARN("Cherry again !!!");
-                        cherryNum = 0;
-                        got_cherry_picked = false;
-                        cherryTime = ros::Time::now();
+                        if (cherryE[0] == 0 && cherryE[1] == 0 && cherryE[2] == 0 && cherryE[3] == 0)
+                        {
+                            // now_Mission = STEAL;
+                        }
+                        else
+                        {
+                            now_Mission = CHERRY;
+                            ROS_WARN("Cherry again !!!");
+                            cherryNum = 0;
+                            got_cherry_picked = false;
+                            cherryTime = ros::Time::now();
+                        }
                     }
                     else
                     {
