@@ -72,9 +72,9 @@ navigation_main hasn't been uploaded!!!
     cd Eurobot_2023/src/Eurobot2023_main_test/src
     python3 haha.py
     
-#### mode : p/d (path or dock)
-#### robot : 1/2(our robot) 3/4(rival)
-#### x : x position in meters
-#### y : y position in meters
-#### ang : robot's angle in degrees
+#### (1) mode : p/d (path or dock)
+#### (2) robot : 1/2(our robot) 3/4(rival)
+#### (3) x : x position in meters
+#### (4) y : y position in meters
+#### (5) ang : robot's angle in degrees
     
