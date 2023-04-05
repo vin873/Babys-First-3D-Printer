@@ -30,14 +30,14 @@
 big
 
     Eurobot2023_main_test
-    mainClass.poseStamped_set(0, home[0], 1.125, 1.980, 0, 1);
-    mainClass.poseStamped_set(0, home[1], 1.125, 0.020, 0, 1);
+     mainClass.poseStamped_set(0, home[0], 1.125, 1.825, 0, 1);
+     mainClass.poseStamped_set(0, home[1], 1.125, 0.175, 0, 1);
      
 small
 
     Eurobot2023_main_small_test
-    mainClass.poseStamped_set(0, home[0], 1.125, 1.680, 0, 1);
-    mainClass.poseStamped_set(0, home[1], 1.125, 0.320, 0, 1);
+    mainClass.poseStamped_set(0, home[0], 1.125, 1.475, 0, 1);
+    mainClass.poseStamped_set(0, home[1], 1.125, 0.525, 0, 1);
     
 ## 5. Bug that hasn't been fixed
 
