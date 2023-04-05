@@ -4,7 +4,7 @@ import rospy
 from std_msgs.msg import Bool
 from std_msgs.msg import Float64
 from geometry_msgs.msg import Pose
-from geometry_msgs.msg import PoseStamped
+from geometry_msgs.msg import PoseWithCovarianceStamped
 from nav_msgs.msg import Odometry
 from geometry_msgs.msg import PoseArray
 from geometry_msgs.msg import Quaternion
@@ -38,9 +38,10 @@ fullness = [[0, 0, 0, 0], [0, 0, 0, 0]]
 tempFull = [[0, 0, 0, 0], [0, 0, 0, 0]]
 currMin = [99999, 99999]
 minAngle = 360
-headAng = 0
+headAng = -45
 outAngle = [[0, 0, 0], [0, 0, 0]]
-dockDis = 0.100
+dockDis = 0.240
+cakeDis = 0.075
 
 robotNum = 0
 side = 0
@@ -54,16 +55,16 @@ def handle_cake(req):
     return cakeResponse(robotPose)
 
 def startPos1_callback(msg):
-    global startPos, absAng
+    global startPos, absAng, headAng
     startPos[0][0] = msg.pose.pose.position.x * 1000
     startPos[0][1] = msg.pose.pose.position.y * 1000
-    absAng[0] = quaternion2euler(msg.pose.pose.orientation.x, msg.pose.pose.orientation.y, msg.pose.pose.orientation.z, msg.pose.pose.orientation.w)
+    absAng[0] = quaternion2euler(msg.pose.pose.orientation.x, msg.pose.pose.orientation.y, msg.pose.pose.orientation.z, msg.pose.pose.orientation.w) - headAng
 
 def startPos2_callback(msg):
-    global startPos
+    global startPos, absAng, headAng
     startPos[1][0] = msg.pose.pose.position.x * 1000
     startPos[1][1] = msg.pose.pose.position.y * 1000
-    absAng[1] = quaternion2euler(msg.pose.pose.orientation.x, msg.pose.pose.orientation.y, msg.pose.pose.orientation.z, msg.pose.pose.orientation.w)
+    absAng[1] = quaternion2euler(msg.pose.pose.orientation.x, msg.pose.pose.orientation.y, msg.pose.pose.orientation.z, msg.pose.pose.orientation.w) - headAng
 
 def enemiesPos1_callback(msg):
     global enemies
@@ -90,22 +91,26 @@ def allCakes_callback(msg):
                 allCakes[c][i] = [-1, -1]     
     # print(allCakes)
 
-def dockPoint(pos, target):
+def tPoint(mode, pos, target):
     # print(pos ,target)
     if target == [-0.001, -0.001]:
         return [-1, -1]
     else:
+        if mode == 'd':
+            dis = dockDis
+        elif mode == 'c':
+            dis = cakeDis
         point = [-1, -1]
         if target[0] == pos[0]:
             if target[1] > pos[1]:
-                point = [target[0], target[1]-dockDis]
+                point = [target[0], target[1]-dis]
             elif target[1] < pos[1]:
-                point = [target[0], target[1]+dockDis]
+                point = [target[0], target[1]+dis]
         elif target[1] == pos[1]:
             if target[0] > pos[0]:
-                point = [target[0]-dockDis, target[1]]
+                point = [target[0]-dis, target[1]]
             elif target[0] < pos[0]:
-                point = [target[0]+dockDis, target[1]]
+                point = [target[0]+dis, target[1]]
         else:
             if target[0] > pos[0]:
                 x = target[0] - pos[0]
@@ -116,13 +121,13 @@ def dockPoint(pos, target):
             else:
                 y = pos[1]-target[1]
             if target[1] > pos[1]:
-                point[1] = target[1] - dockDis*math.sin(math.atan(y/x))
+                point[1] = target[1] - dis*math.sin(math.atan(y/x))
             else:
-                point[1] = target[1] + dockDis*math.sin(math.atan(y/x))
+                point[1] = target[1] + dis*math.sin(math.atan(y/x))
             if target[0] > pos[0]:
-                point[0] = target[0] - dockDis*math.cos(math.atan(y/x))
+                point[0] = target[0] - dis*math.cos(math.atan(y/x))
             else:
-                point[0] = target[0] + dockDis*math.cos(math.atan(y/x))
+                point[0] = target[0] + dis*math.cos(math.atan(y/x))
         return point
 
 def robotPublish(num, color):
@@ -143,7 +148,7 @@ def robotPublish(num, color):
     robotPose.header.stamp = rospy.Time.now()
 
     pose = Pose()
-    pt = dockPoint(preposition, position)
+    pt = tPoint('d', preposition, position)
     # print(pt)
     pose.position.x = pt[0]
     pose.position.y = pt[1]
@@ -152,10 +157,11 @@ def robotPublish(num, color):
     pose.orientation.z = quaternion.z
     pose.orientation.w = quaternion.w
     robotPose.poses.append(pose)
-
+    
     pose2 = Pose()
-    pose2.position.x = position[0]
-    pose2.position.y = position[1]
+    pt = tPoint('c', preposition, position)
+    pose2.position.x = pt[0]
+    pose2.position.y = pt[1]
     pose2.orientation.x = quaternion.x
     pose2.orientation.y = quaternion.y
     pose2.orientation.z = quaternion.z
@@ -214,10 +220,10 @@ def closerEnemy(target):
     global enemies
     speed = 0.9  # enemy/our
     min = 99999
-    for enemy in enemies:
-        if enemy != [-1, -1]:
-            if min > euclidean(enemy, target) / speed:
-                min = euclidean(enemy, target) / speed
+    for enemy in range(2):
+        if enemies[enemy] != [-1, -1]:
+            if min > euclidean(enemies[enemy], target) / speed:
+                min = euclidean(enemies[enemy], target) / speed
     return min
 
 def whatColorGet(pos, num):
@@ -324,11 +330,11 @@ def where2go(pos, num):
         for j in range(3):
             minAngle = 360
             minAngleNum = -1
-            tAngle = (np.rad2deg(np.arctan2(picked[num][j][1] - anglePos[1], picked[num][j][0] - anglePos[0])) - absAng[num] + 360) % 360
+            tAngle = (np.rad2deg(np.arctan2(picked[num][j][1] - anglePos[1], picked[num][j][0] - anglePos[0])) - tempAng[num] + 360) % 360
             tAngles = [360, 360, 360, 360]
             for i in range(4):
                 if tempFull[num][i] == 0:
-                    tAngles[i] = (tAngle - i * 90 - tempAng[num] + 360) % 360
+                    tAngles[i] = (tAngle - i * 90 + 360) % 360
                     if tAngles[i] > 180:
                         tAngles[i] -= 360
             for i in tAngles:
@@ -337,10 +343,10 @@ def where2go(pos, num):
                     minAngleNum = tAngles.index(i)
             outAngle[num][j] = minAngle + tempAng[num] + headAng
             # print(outAngle[num], tempAng[num], tAngles, minAngle, tAngle)
-            tempAng[num] = outAngle[num][j]
+            tempAng[num] = outAngle[num][j] - headAng
             tempFull[num][minAngleNum] = j+1
             anglePos = picked[num][j]
-    # print(picked)
+    # print(outAngle[robotNum][0], absAng[robotNum])
 
     currMin[num] = tempMin
 
@@ -350,6 +356,10 @@ def listener():
     side = rospy.get_param('side')
     robotNum = rospy.get_param('robot')
     rospy.Service('cake'+str(robotNum), cake, handle_cake)
+    # rospy.Subscriber("/robot1/ekf_pose", PoseWithCovarianceStamped, startPos1_callback)
+    # rospy.Subscriber("/robot2/ekf_pose", PoseWithCovarianceStamped, startPos2_callback)
+    # rospy.Subscriber("/rival1/ekf_pose", PoseWithCovarianceStamped, enemiesPos1_callback)
+    # rospy.Subscriber("/rival2/ekf_pose", PoseWithCovarianceStamped, enemiesPos2_callback)
     rospy.Subscriber("/robot1/odom", Odometry, startPos1_callback)
     rospy.Subscriber("/robot2/odom", Odometry, startPos2_callback)
     rospy.Subscriber("/rival1/odom", Odometry, enemiesPos1_callback)
@@ -400,10 +410,10 @@ def publisher():
         robotPose.header.frame_id = ''
         for pos in range(3):
             if pos == 0:
-                preposition[0] = startPos[robotNum][0] *0.001
-                preposition[1] = startPos[robotNum][1] *0.001
+                preposition[0] = startPos[robotNum][0] * 0.001
+                preposition[1] = startPos[robotNum][1] * 0.001
             else:
-                preposition = list(position)
+                preposition = list(tPoint('c', preposition, position))
             for axis in range(2):                    
                 for i in range(3):
                     if picked[robotNum][pos] in allCakes[i]:

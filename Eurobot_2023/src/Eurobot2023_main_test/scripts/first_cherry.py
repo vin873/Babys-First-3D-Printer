@@ -5,13 +5,13 @@ from std_msgs.msg import Bool
 from std_msgs.msg import Int32MultiArray
 from nav_msgs.msg import Odometry
 from geometry_msgs.msg import Pose
-from geometry_msgs.msg import PoseStamped
+from geometry_msgs.msg import PoseWithCovarianceStamped
 from geometry_msgs.msg import PoseArray
 import numpy as np
 from scipy.spatial.distance import euclidean
 from Eurobot2023_main_test.srv import *
 
-cherries = [[[100, 900], [300, 900]], [[1350, 1885], [1650, 1885]], [[2700, 900], [2900, 900]], [[1350, 115], [1650, 115]], [[100, 1100], [300, 1100]], [[2700, 1100], [2900, 1100]]]
+cherries = [[[200, 800], [400, 800]], [[1350, 1800], [1650, 1800]], [[2600, 800], [2800, 800]], [[1350, 200], [1650, 200]], [[200, 1200], [400, 1200]], [[2600, 1200], [2800, 1200]]]
 
 # subscribe cherries’ existence
 cherryE = [1, 1, 1, 1]
@@ -57,28 +57,28 @@ def enemiesPos2_callback(msg):
 def cherryPublish():
     global robotPose, pickedSide
     side = pickedSide[robotNum]
-    if side != [[-1, -1], [-1, -1]]:
-        num = '-'
-        for i in cherries:
-            if side[0] in i:
-                if cherries.index(i) < 4:
-                    num = str(cherries.index(i))
-                elif cherries.index(i) == 4:
-                    num = '0'
-                elif cherries.index(i) == 5:
-                    num = '2'
-        robotPose.header.frame_id = num
-        robotPose.header.stamp = rospy.Time.now()
+    # if side != [[-1, -1], [-1, -1]]:
+    num = '-'
+    for i in cherries:
+        if side[0] in i:
+            if cherries.index(i) < 4:
+                num = str(cherries.index(i))
+            elif cherries.index(i) == 4:
+                num = '0'
+            elif cherries.index(i) == 5:
+                num = '2'
+    robotPose.header.frame_id = num
+    robotPose.header.stamp = rospy.Time.now()
 
-        for i in side:
-            pose = Pose()
-            pose.position.x = i[0] * 0.001
-            pose.position.y = i[1] * 0.001
-            pose.orientation.x = 0
-            pose.orientation.y = 0
-            pose.orientation.z = 0
-            pose.orientation.w = 1
-            robotPose.poses.append(pose)
+    for i in side:
+        pose = Pose()
+        pose.position.x = i[0] * 0.001
+        pose.position.y = i[1] * 0.001
+        pose.orientation.x = 0
+        pose.orientation.y = 0
+        pose.orientation.z = 0
+        pose.orientation.w = 1
+        robotPose.poses.append(pose)
 
 def cherry_callback(msg):
     if msg.data:
@@ -99,17 +99,18 @@ def closerEnemy(target):
             for i in target:
                 if min > euclidean(enemy, i) / speed:
                     min = euclidean(enemy, i) / speed
+                    side = list(i)
     return min
 
 def where2suck(pos, num):
     global tempMin, tempSide, used, cherryE
     tempMin[num] = 99999
     tempChoice = [-1, -1]
-    enemyChoice = [-1, -1]
     tempSide[num] = [[-1, -1], [-1, -1]]
 
     for sides in range(6):
         if (sides < 4 and cherryE[sides] != 0) or (sides == 4 and cherryE[0] != 0) or (sides == 5 and cherryE[2] != 0):
+            # print(sides)
             for cherrySide in cherries[sides]:
                 if sides == 0 or sides == 4:
                     temp = list(cherries[0]) + list(cherries[4])
@@ -125,8 +126,6 @@ def where2suck(pos, num):
                         tempMin[num] = dis2cherry
                         tempSide[num] = list(cherries[sides])
                         tempChoice = list(cherrySide)
-        # print(num, sides, tempMin)
-
     for i in cherries:
         if tempChoice in i:
             if euclidean(pos, tempChoice) > euclidean(pos, i[int(not bool(i.index(tempChoice)))]):
@@ -144,6 +143,10 @@ def listener():
     robotNum = rospy.get_param('robot')
     rospy.Service('cherry'+str(robotNum), cherry, handle_cherry)
     rospy.Subscriber("/cherryExistence", Int32MultiArray, cherryE_callback)
+    # rospy.Subscriber("/robot1/ekf_pose", PoseWithCovarianceStamped, startPos1_callback)
+    # rospy.Subscriber("/robot2/ekf_pose", PoseWithCovarianceStamped, startPos2_callback)
+    # rospy.Subscriber("/rival1/ekf_pose", PoseWithCovarianceStamped, enemiesPos1_callback)
+    # rospy.Subscriber("/rival2/ekf_pose", PoseWithCovarianceStamped, enemiesPos2_callback)
     rospy.Subscriber("/robot1/odom", Odometry, startPos1_callback)
     rospy.Subscriber("/robot2/odom", Odometry, startPos2_callback)
     rospy.Subscriber("/rival1/odom", Odometry, enemiesPos1_callback)
@@ -153,7 +156,6 @@ def listener():
 def publisher():
     # print(cherryE)
     global robotPose, used, pickedSide
-    
     for robot in startPos:
         if robot != [-1, -1]:
             pickedSide[startPos.index(robot)] = where2suck(robot, startPos.index(robot))
@@ -172,6 +174,7 @@ def publisher():
             pickedSide[0] = where2suck(startPos[0], 0)
     
     robotPose.poses = []
+    # print(pickedSide)
     cherryPublish()
 
 if __name__=="__main__":
