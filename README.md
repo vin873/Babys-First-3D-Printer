@@ -87,4 +87,9 @@ change the last 2 lines to :
 
     export ROS_MASTER_URI=http://192.168.50.51:11311
     export ROS_IP=192.168.50.51
+    
+##### 9 for robot1
+##### 174 for robot2
+##### 210 for rival1
+##### 51 for DELL
 
