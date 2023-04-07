@@ -78,4 +78,13 @@ navigation_main hasn't been uploaded!!!
 #### (3) x : x position in meters
 #### (4) y : y position in meters
 #### (5) ang : robot's angle in degrees
+
+## 9. Run Car
     
+    nano ~/.bashrc
+
+change the last 2 lines to :
+
+    export ROS_MASTER_URI=http://192.168.50.51:11311
+    export ROS_IP=192.168.50.51
+
