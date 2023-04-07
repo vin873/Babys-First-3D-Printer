@@ -24,6 +24,7 @@ robotNum = 0
 side = 0
 absAng = [0, 0]
 fullness = [0, 0, 0, 0]
+headAng = -45
 
 ang = 0
 robotAng = Quaternion()
@@ -106,7 +107,7 @@ def publisher(num):
     for i in range(4):
         
         ang = (point[side][num][i][2] - empty*90) * math.pi / 180
-        robotAng = euler2quaternion(0, 0, ang)
+        robotAng = euler2quaternion(0, 0, ang+headAng)
     
         pose = Pose()
         pose.position.x = point[side][num][i][0]
