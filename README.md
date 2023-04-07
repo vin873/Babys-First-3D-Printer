@@ -1,45 +1,19 @@
 # Babys-First-3D-Printer
 
-## 1.Big
-
-### catkin_make
-    cd Eurobot_2023/
-    source devel/setup.bash
-    catkin_make
-    
-### roslaunch
-    source devel/setup.bash
-    roslaunch Eurobot2023_main_test main.launch
-    
-## 2.Small
-
-### catkin_make
-    cd Eurobot_2023_small/
-    source devel/setup.bash
-    catkin_make
-    
-### roslaunch
-    source devel/setup.bash
-    roslaunch Eurobot2023_main_small_test main.launch
-
-## 3.Start
+## 1.Start
     rostopic pub -1 /startornot std_msgs/Bool true
     
-## 4.Difference
+## 2.Difference
 
 big
 
-    Eurobot2023_main_test
-    mainClass.poseStamped_set(0, home[0], 1.125, 1.825, 0, 1);
-    mainClass.poseStamped_set(0, home[1], 1.125, 0.175, 0, 1);
+    eurobot2023_main
      
 small
 
-    Eurobot2023_main_small_test
-    mainClass.poseStamped_set(0, home[0], 1.125, 1.475, 0, 1);
-    mainClass.poseStamped_set(0, home[1], 1.125, 0.525, 0, 1);
+    eurobot2023_main_small
     
-## 5. Bug that hasn't been fixed
+## 3.Bug that hasn't been fixed
 
 #### 1. Safest and looking for shortest distance will sometimes plan a strange looking route when some cakes are taken away while robots are moving.
 #### 2. first_cherry.py has updated, but there are still som problems that need to be fixed.
@@ -47,13 +21,13 @@ small
 #### 4. Robots will still plan to the same cherryside sometimes, the algorithm still needs to be imporved.
 #### 5. The STEAL state hasn't been written.
 
-## 6. Navigation
+## 4. Navigation
 
 https://well-season-c5b.notion.site/a0708dcd585249ecae95b1ce3764befc
 
 navigation_main hasn't been uploaded!!!
 
-## 7. map in rviz
+## 5. map in rviz
     
 #### add in sim~.launch
     <node name="publish_image" pkg="rviz_display" type="publish_image" output="screen"/>
@@ -68,7 +42,7 @@ navigation_main hasn't been uploaded!!!
       Quad Frame: quad
       Value: true
 
-## 8. Drive car
+## 6. Drive car
 
     cd Eurobot_2023/src/Eurobot2023_main_test/src
     python3 haha.py
@@ -79,7 +53,7 @@ navigation_main hasn't been uploaded!!!
 #### (4) y : y position in meters
 #### (5) ang : robot's angle in degrees
 
-## 9. Run Car
+## 7. Run Car
     
     nano ~/.bashrc
 
