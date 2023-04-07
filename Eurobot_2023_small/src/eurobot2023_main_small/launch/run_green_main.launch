@@ -1,0 +1,11 @@
+<launch>
+  <param name="side" type="int" value="1" />
+  <param name="robot" type="int" value="1" />
+  <param name="run_mode" type="string" value="run" />
+  <node name="better_cake_small" pkg="eurobot2023_main_small" type="better_cake.py" output="screen" />
+  <node name="first_cherry_small" pkg="eurobot2023_main_small" type="first_cherry.py" output="screen" />
+  <node name="mission_callback_small" pkg="eurobot2023_main_small" type="ultra_mission_feedback.py" output="screen" />
+  <node name="release_small" pkg="eurobot2023_main_small" type="release.py" output="screen" />
+  <node name="main_small" pkg="eurobot2023_main_small" respawn="false" type="Babies_First_CNC" output="screen" />
+
+</launch>
