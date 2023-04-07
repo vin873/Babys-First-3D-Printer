@@ -93,3 +93,7 @@ change the last 2 lines to :
 ##### (3) 210 for rival1
 ##### (4) 51 for DELL
 
+    source ~/.bashrc
+    
+open new terminal
+
