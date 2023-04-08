@@ -71,3 +71,6 @@ change the last 2 lines to :
     
 open new terminal
 
+## 8. Rosserial
+
+https://hackmd.io/@925/S1lQD_ljq/%2Fs%2Fryg2eQv4Q1Gplup81jfMRw%3Fboth%233-1-ROS-%25E7%25AB%25AF%25E8%25A8%25AD%25E5%25AE%259A
