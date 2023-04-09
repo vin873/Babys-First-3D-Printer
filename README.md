@@ -1,9 +1,9 @@
 # Babys-First-3D-Printer
 
-## 1.Start
+## 1. Start
     rostopic pub -1 /startornot std_msgs/Bool true
     
-## 2.Difference
+## 2. Difference
 
 big
 
@@ -13,7 +13,7 @@ small
 
     eurobot2023_main_small
     
-## 3.Bug that hasn't been fixed
+## 3. Bug that hasn't been fixed
 
 #### 1. Safest and looking for shortest distance will sometimes plan a strange looking route when some cakes are taken away while robots are moving.
 #### 2. first_cherry.py has updated, but there are still som problems that need to be fixed.
