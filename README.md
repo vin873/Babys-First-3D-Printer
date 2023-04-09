@@ -16,7 +16,7 @@ small
 ## 3. Bug that hasn't been fixed
 
 #### 1. Safest and looking for shortest distance will sometimes plan a strange looking route when some cakes are taken away while robots are moving.
-#### 2. first_cherry.py has updated, but there are still som problems that need to be fixed.
+#### 2. first_cherry.py has been updated, but there are still som problems that need to be fixed.
 #### 3. Robots will sometimes keep change planned routes in a strange way due to the algorithm, but if I fix the robot in specific points, it won't happen.
 #### 4. Robots will still plan to the same cherryside sometimes, the algorithm still needs to be imporved.
 #### 5. The STEAL state hasn't been written.
