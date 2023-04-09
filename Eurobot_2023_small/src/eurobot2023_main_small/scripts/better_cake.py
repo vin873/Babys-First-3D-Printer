@@ -429,7 +429,7 @@ def publisher():
             quaternion = euler2quaternion(0, 0, outAngle[robotNum][pos] * math.pi / 180)
             robotPublish(robotNum, color, pos)
         # print(robotPose.header.frame_id)
-        print(outAngle[robotNum])
+        # print(outAngle[robotNum])
         # print(picked[robotNum])
 
 if __name__=="__main__":

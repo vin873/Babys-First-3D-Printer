@@ -492,7 +492,7 @@ int main(int argc, char **argv)
                             ROS_WARN("===== Mission [%s] overtime! =====", missionStr.data.c_str());
                             if (cakeNum < 5)
                             {
-                                cakeNum += 2;
+                                cakeNum ++;
                             }
                             else
                             {
@@ -759,7 +759,19 @@ int main(int argc, char **argv)
                     {
                         if (!moving && !doing)
                         {
-                            if (!arrived && !mission_success)
+                            if (route_failed)
+                            {
+                                route_failed = false;
+                                if (reCake < 3)
+                                {
+                                    reCake++;
+                                }
+                                else
+                                {
+                                    now_Mission = STEAL;
+                                }
+                            }
+                            else if (!arrived && !mission_success)
                             {
                                 mainClass._where2go.publish(release_point[reCake]);
                                 ROS_INFO("Heading over to x:[%.3f] y:[%.3f]", release_point[reCake].pose.position.x, release_point[reCake].pose.position.y);
