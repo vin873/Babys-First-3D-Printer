@@ -4,9 +4,10 @@ import rospy
 from std_msgs.msg import Bool
 from std_msgs.msg import String
 from nav_msgs.msg import Odometry
+from std_msgs.msg import Int16MultiArray
 from std_msgs.msg import Int32MultiArray
 
-done = Int32MultiArray()
+done = Int16MultiArray()
 done2 = Int32MultiArray()
 arr = [0, 0, 0, 0, 0]
 arr2 = [1, 1, 1, 1]
@@ -26,7 +27,7 @@ def mission_callback(msg):
         arr[0] = 1
     elif msg.data[0] == 'c':
         arr[0] = 1
-        publisher(1)
+        # publisher(1)
     elif msg.data[0] == 'o':
         # arr[int(msg.data[1])+1] = 0
         arr[0] = 1
@@ -60,15 +61,13 @@ def listener():
     global robotNum
     rospy.init_node("ultra_mission_feedback")
     robotNum = rospy.get_param('robot')
-    rospy.Subscriber("/robot1/odom", Odometry, startPos1_callback)
-    rospy.Subscriber("/robot2/odom", Odometry, startPos2_callback)
     rospy.Subscriber("/cherryExistence", Int32MultiArray, cherryE_callback)
     rospy.Subscriber("/mission"+str(robotNum), String, mission_callback)
     rospy.spin()
 
 def publisher(time):
     global arr
-    pub = rospy.Publisher('/donefullness'+str(robotNum), Int32MultiArray, queue_size=1000)
+    pub = rospy.Publisher('/donefullness'+str(robotNum), Int16MultiArray, queue_size=1000)
     done.data = arr
     rospy.sleep(time)
     pub.publish(done)

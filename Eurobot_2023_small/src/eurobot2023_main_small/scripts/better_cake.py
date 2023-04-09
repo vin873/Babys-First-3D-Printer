@@ -131,7 +131,7 @@ def tPoint(mode, pos, target):
                 point[0] = target[0] + dis*math.cos(math.atan(y/x))
         return point
 
-def robotPublish(num, color):
+def robotPublish(num, color, count):
     global robotPose, tempFull
 
     c = '?'
@@ -144,8 +144,11 @@ def robotPublish(num, color):
 
     robotPose.header.frame_id += c
     for full in tempFull[num]:
-        if full == color+1:
-            robotPose.header.frame_id += str(tempFull[num].index(full))
+        if full == count + 1:
+            door = int(tempFull[num].index(full))
+            if door == 4:
+                door = 0
+            robotPose.header.frame_id += str(door)
     robotPose.header.stamp = rospy.Time.now()
 
     pose = Pose()
@@ -247,7 +250,7 @@ def safest(pos, num):
     return tempColorPicked
 
 def where2go(pos, num):
-    global picked, enemies, currMin, fullness, absAng, minAngle, used, outAngle, tempAllCakes, allCakes, tempGot, headAng
+    global picked, enemies, currMin, fullness, absAng, minAngle, used, outAngle, tempAllCakes, allCakes, tempGot, headAng, tempFull
     
     # print(allCakes)
     tempGot = [[0, 0, 0], [0, 0, 0]]
@@ -335,14 +338,14 @@ def where2go(pos, num):
             tAngles = [360, 360, 360, 360]
             for i in range(4):
                 if tempFull[num][i] == 0:
-                    tAngles[i] = (tAngle - i * 90 + 360) % 360
-                    if tAngles[i] > 180:
-                        tAngles[i] -= 360
+                    tAngles[i] = (tAngle - i * 90 + 360 - headAng) % 360
+                    # if tAngles[i] > 180:
+                    #     tAngles[i] -= 360
             for i in tAngles:
                 if abs(i) < abs(minAngle):
                     minAngle = i
                     minAngleNum = tAngles.index(i)
-            outAngle[num][j] = minAngle + tempAng[num] + headAng
+            outAngle[num][j] = minAngle + tempAng[num] + 2*headAng
             # print(outAngle[num], tempAng[num], tAngles, minAngle, tAngle)
             tempAng[num] = outAngle[num][j] - headAng
             tempFull[num][minAngleNum] = j+1
@@ -424,8 +427,10 @@ def publisher():
                         color = i
                 position[axis] = picked[robotNum][pos][axis] * 0.001
             quaternion = euler2quaternion(0, 0, outAngle[robotNum][pos] * math.pi / 180)
-            robotPublish(robotNum, color)
-        # print(picked)
+            robotPublish(robotNum, color, pos)
+        # print(robotPose.header.frame_id)
+        print(outAngle[robotNum])
+        # print(picked[robotNum])
 
 if __name__=="__main__":
     try:

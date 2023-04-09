@@ -7,7 +7,7 @@ from geometry_msgs.msg import Pose
 from geometry_msgs.msg import PoseStamped
 from geometry_msgs.msg import Quaternion
 from std_msgs.msg import Int32
-from std_msgs.msg import Int32MultiArray
+from std_msgs.msg import Int16MultiArray
 from geometry_msgs.msg import PoseArray
 import numpy as np
 from scipy.spatial.distance import euclidean
@@ -85,7 +85,7 @@ def listener():
     side = rospy.get_param('side')
     robotNum = rospy.get_param('robot')
     rospy.Service('release'+str(robotNum), release, handle_release)
-    rospy.Subscriber("/donefullness"+str(robotNum), Int32MultiArray, mission_callback)
+    rospy.Subscriber("/donefullness"+str(robotNum), Int16MultiArray, mission_callback)
     rospy.spin()
 
 def publisher(num):
@@ -106,8 +106,8 @@ def publisher(num):
 
     for i in range(4):
         
-        ang = (point[side][num][i][2] - empty*90) * math.pi / 180
-        robotAng = euler2quaternion(0, 0, ang+headAng)
+        ang = (point[side][num][i][2] - empty*90 + headAng) * math.pi / 180
+        robotAng = euler2quaternion(0, 0, ang)
     
         pose = Pose()
         pose.position.x = point[side][num][i][0]
@@ -117,6 +117,7 @@ def publisher(num):
         pose.orientation.z = robotAng.z
         pose.orientation.w = robotAng.w
         robotPose.poses.append(pose)
+        print((point[side][num][i][2] - empty*90+headAng))
 
 if __name__=="__main__":
     try:

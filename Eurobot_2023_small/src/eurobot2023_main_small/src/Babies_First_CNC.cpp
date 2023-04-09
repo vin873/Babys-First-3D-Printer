@@ -13,6 +13,7 @@
 #include <std_msgs/Bool.h>
 #include <std_msgs/String.h>
 #include <std_msgs/Int32.h>
+#include <std_msgs/Int16MultiArray.h>
 #include <std_msgs/Int32MultiArray.h>
 #include <std_msgs/Float32.h>
 #include <geometry_msgs/Pose.h>
@@ -135,7 +136,7 @@ public:
         _where2go = nh.advertise<geometry_msgs::PoseStamped>("/robot"+to_string(robot+1)+"/mission", 1000);
         _finishornot = nh.subscribe<std_msgs::Bool>("/robot"+to_string(robot+1)+"/is_finish", 1000, &mainProgram::nav_callback, this);
         _mission = nh.advertise<std_msgs::String>("mission"+to_string(robot), 1000);
-        _donefullness = nh.subscribe<std_msgs::Int32MultiArray>("donefullness"+to_string(robot), 1000, &mainProgram::done_fullness_callback, this);
+        _donefullness = nh.subscribe<std_msgs::Int16MultiArray>("donefullness"+to_string(robot), 1000, &mainProgram::done_fullness_callback, this);
         _myPos = nh.subscribe<nav_msgs::Odometry>("/robot"+to_string(robot+1)+"/odom", 1000, &mainProgram::myPos_callback, this);
     }
 
@@ -188,7 +189,7 @@ public:
         }
     }
 
-    void done_fullness_callback(const std_msgs::Int32MultiArray::ConstPtr &msg)
+    void done_fullness_callback(const std_msgs::Int16MultiArray::ConstPtr &msg)
     {
         doing = false;
         if (msg->data.at(0))
@@ -265,7 +266,7 @@ public:
 
     // mission
     ros::Publisher _mission = nh.advertise<std_msgs::String>("mission"+to_string(robot), 1000);
-    ros::Subscriber _donefullness = nh.subscribe<std_msgs::Int32MultiArray>("donefullness"+to_string(robot), 1000, &mainProgram::done_fullness_callback, this);
+    ros::Subscriber _donefullness = nh.subscribe<std_msgs::Int16MultiArray>("donefullness"+to_string(robot), 1000, &mainProgram::done_fullness_callback, this);
     ros::Subscriber _startornot = nh.subscribe<std_msgs::Bool>("startornot", 1000, &mainProgram::start_callback, this);
 
     // basket
