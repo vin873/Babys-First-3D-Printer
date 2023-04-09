@@ -13,6 +13,7 @@
 #include <std_msgs/Bool.h>
 #include <std_msgs/String.h>
 #include <std_msgs/Int32.h>
+#include <std_msgs/Int16MultiArray.h>
 #include <std_msgs/Int32MultiArray.h>
 #include <std_msgs/Float32.h>
 #include <geometry_msgs/Pose.h>
@@ -22,6 +23,7 @@
 #include <eurobot2023_main/cake.h>
 #include <eurobot2023_main/cherry.h>
 #include <eurobot2023_main/release.h>
+#include <eurobot2023_main/steal.h>
 
 #include <iostream>
 #include <stdlib.h>
@@ -108,6 +110,7 @@ std_msgs::Bool finish_mission;
 std_msgs::String missionStr;
 
 geometry_msgs::PoseStamped cake_picked[6];
+geometry_msgs::PoseStamped steal_picked;
 geometry_msgs::PoseStamped cherry_picked[2];
 geometry_msgs::PoseStamped basket_point[2];
 geometry_msgs::PoseStamped release_point[4];
@@ -132,10 +135,11 @@ public:
         _cake_client = nh.serviceClient<eurobot2023_main::cake>("cake"+to_string(robot));
         _cherry_client = nh.serviceClient<eurobot2023_main::cherry>("cherry"+to_string(robot));
         _release_client = nh.serviceClient<eurobot2023_main::release>("release"+to_string(robot));
+        _steal_client = nh.serviceClient<eurobot2023_main::steal>("steal"+to_string(robot));
         _where2go = nh.advertise<geometry_msgs::PoseStamped>("/robot"+to_string(robot+1)+"/mission", 1000);
         _finishornot = nh.subscribe<std_msgs::Bool>("/robot"+to_string(robot+1)+"/is_finish", 1000, &mainProgram::nav_callback, this);
         _mission = nh.advertise<std_msgs::String>("mission"+to_string(robot), 1000);
-        _donefullness = nh.subscribe<std_msgs::Int32MultiArray>("donefullness"+to_string(robot), 1000, &mainProgram::done_fullness_callback, this);
+        _donefullness = nh.subscribe<std_msgs::Int16MultiArray>("donefullness"+to_string(robot), 1000, &mainProgram::done_fullness_callback, this);
         _myPos = nh.subscribe<nav_msgs::Odometry>("/robot"+to_string(robot+1)+"/odom", 1000, &mainProgram::myPos_callback, this);
     }
 
@@ -188,7 +192,7 @@ public:
         }
     }
 
-    void done_fullness_callback(const std_msgs::Int32MultiArray::ConstPtr &msg)
+    void done_fullness_callback(const std_msgs::Int16MultiArray::ConstPtr &msg)
     {
         doing = false;
         if (msg->data.at(0))
@@ -258,6 +262,7 @@ public:
     ros::ServiceClient _cake_client = nh.serviceClient<eurobot2023_main::cake>("cake"+to_string(robot));
     ros::ServiceClient _cherry_client = nh.serviceClient<eurobot2023_main::cherry>("cherry"+to_string(robot));
     ros::ServiceClient _release_client = nh.serviceClient<eurobot2023_main::release>("release"+to_string(robot));
+    ros::ServiceClient _steal_client = nh.serviceClient<eurobot2023_main::steal>("steal"+to_string(robot));
 
     // chassis
     ros::Publisher _where2go = nh.advertise<geometry_msgs::PoseStamped>("/robot"+to_string(robot+1)+"/mission", 1000);
@@ -265,7 +270,7 @@ public:
 
     // mission
     ros::Publisher _mission = nh.advertise<std_msgs::String>("mission"+to_string(robot), 1000);
-    ros::Subscriber _donefullness = nh.subscribe<std_msgs::Int32MultiArray>("donefullness"+to_string(robot), 1000, &mainProgram::done_fullness_callback, this);
+    ros::Subscriber _donefullness = nh.subscribe<std_msgs::Int16MultiArray>("donefullness"+to_string(robot), 1000, &mainProgram::done_fullness_callback, this);
     ros::Subscriber _startornot = nh.subscribe<std_msgs::Bool>("startornot", 1000, &mainProgram::start_callback, this);
 
     // basket
@@ -836,6 +841,15 @@ int main(int argc, char **argv)
                     else if (!got_steal_cake)
                     {
                         now_Mission = HOME;
+                        eurobot2023_main::steal ssrv;
+                        if (mainClass._steal_client.call(ssrv))
+                        {
+                            if (srv.response.picked.header.frame_id != "")
+                            {
+                                mainClass.poseStamped_set(0, steal_picked, ssrv.response.picked.pose.position.x, ssrv.response.picked.pose.position.y, ssrv.response.picked.pose.orientation.z, ssrv.response.picked.pose.orientation.w);
+                                got_steal_cake=true;
+                            }
+                        }
                     }
                     else if (got_steal_cake && !hanoiing)
                     {

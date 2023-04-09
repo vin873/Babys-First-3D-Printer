@@ -4,6 +4,7 @@ import rospy
 from std_msgs.msg import Bool
 from std_msgs.msg import Float64
 from geometry_msgs.msg import Pose
+from geometry_msgs.msg import PoseStamped
 from geometry_msgs.msg import PoseWithCovarianceStamped
 from nav_msgs.msg import Odometry
 from geometry_msgs.msg import PoseArray
@@ -14,53 +15,32 @@ from scipy.spatial.distance import euclidean
 from itertools import permutations
 from eurobot2023_main.srv import *
 
-# subscribe our robots pos
-startPos = [[-1, -1], [-1, -1]]
-absAng = [0, 0]
-
+# subscribe each enemy's pos
 enemies = [[-1, -1], [-1, -1]]
+# subscribe our robots pos
+startPos = [[1500, 1000], [1500, 1000]]
+absAng = [0, 0]
 
 picked = [[[-1, -1],  [-1, -1],  [-1, -1]], [[-1, -1],  [-1, -1],  [-1, -1]]]
 used = []
-got = [[0, 0, 0], [0, 0, 0]]  # brown, yellow, pink
-tempGot = [[0, 0, 0], [0, 0, 0]]
-fullness = [[0, 0, 0, 0], [0, 0, 0, 0]]
 tempFull = [[0, 0, 0, 0], [0, 0, 0, 0]]
-plates = [[225,225],[225,1775],[1125,225],[1125,1775],[1875,225],[1875,1775],[2775,225],[2775,725],[2775,1275],[2775,1775]]
-plumpCakes=[]
-currMin = [99999, 99999]
+tempPicked=[]
+plates = [[225, 225], [225, 1775], [1125, 225], [1125, 1775], [1875, 225], [1875, 1775], [2775, 225], [2775, 725], [2775, 1275], [2775, 1775]]
+plumpCakes=[[-1, -1,"", [-1, -1]], [125, 125, 10, [225, 225]]]
 minAngle = 360
 headAng = -45
-outAngle = [[0, 0, 0], [0, 0, 0]]
-dockDis = 0.240
-cakeDis = 0.075
+outAngle = [0, 0]
+stealDis = 240
 
 robotNum = 0
 side = 0
-position = [-1, -1]
-preposition = [-1, -1]
+run_mode = ''
 quaternion = Quaternion()
 robotPose = PoseArray()
 
-def plumpCakes_callback(msg):
-    global plumpCakes, plates
-    for i in range(len(msg.poses)):
-        plumpCakes[i][0] = msg.poses[i].position.x * 1000
-        plumpCakes[i][1] = msg.poses[i].position.y * 1000
-        plumpCakes[i][2] = int(msg.poses[i].position.z)
-    for i in range(len(plates)):
-        if i%2!=side:
-            plates.pop(i)
-    for cake in plumpCakes:
-        for plate in plates:
-            if abs(cake[0]-plate[0])<225 and abs(cake[1]-plate[1])<225:
-                cake.extend(plates.index(plate))
-            else:
-                plumpCakes.remove(cake)
-
-def handle_cake(req):
+def handle_steal(req):
     publisher()
-    return cakeResponse(robotPose)
+    return stealResponse(robotPose)
 
 def startPos1_callback(msg):
     global startPos, absAng, headAng
@@ -84,15 +64,22 @@ def enemiesPos2_callback(msg):
     enemies[1][0] = msg.pose.pose.position.x * 1000
     enemies[1][1] = msg.pose.pose.position.y * 1000
 
-def tPoint(mode, pos, target):
+def closerEnemy(target):
+    global enemies
+    speed = 0.9  # enemy/our
+    min = 99999
+    for enemy in range(2):
+        if enemies[enemy] != [-1, -1]:
+            if min > euclidean(enemies[enemy], target) / speed:
+                min = euclidean(enemies[enemy], target) / speed
+    return min
+
+def tPoint(pos, target):
     # print(pos ,target)
     if target == [-0.001, -0.001]:
         return [-1, -1]
     else:
-        if mode == 'd':
-            dis = dockDis
-        elif mode == 'c':
-            dis = cakeDis
+        dis = stealDis
         point = [-1, -1]
         if target[0] == pos[0]:
             if target[1] > pos[1]:
@@ -123,25 +110,14 @@ def tPoint(mode, pos, target):
                 point[0] = target[0] + dis*math.cos(math.atan(y/x))
         return point
 
-def robotPublish(num, color):
-    global robotPose, tempFull
+def robotPublish(num, target):
+    global robotPose, tempFull, startPos, robotNum
 
-    c = '?'
-    if color == 0:
-        c = 'b'
-    elif color == 1:
-        c = 'y'
-    elif color == 2:
-        c = 'p'
-
-    robotPose.header.frame_id += c
-    for full in tempFull[num]:
-        if full == color+1:
-            robotPose.header.frame_id += str(tempFull[num].index(full))
+    robotPose.header.frame_id = target[2]
     robotPose.header.stamp = rospy.Time.now()
 
     pose = Pose()
-    pt = tPoint('d', preposition, position)
+    pt = tPoint(startPos[robotNum], [target[0], target[1]])
     # print(pt)
     pose.position.x = pt[0]
     pose.position.y = pt[1]
@@ -149,17 +125,8 @@ def robotPublish(num, color):
     pose.orientation.y = quaternion.y
     pose.orientation.z = quaternion.z
     pose.orientation.w = quaternion.w
-    robotPose.poses.append(pose)
-    
-    pose2 = Pose()
-    pt = tPoint('c', preposition, position)
-    pose2.position.x = pt[0]
-    pose2.position.y = pt[1]
-    pose2.orientation.x = quaternion.x
-    pose2.orientation.y = quaternion.y
-    pose2.orientation.z = quaternion.z
-    pose2.orientation.w = quaternion.w
-    robotPose.poses.append(pose2)
+    robotPose.poses=pose
+    print(robotPose)
 
 def euler2quaternion(roll, pitch, yaw):
     qx = np.sin(roll/2) * np.cos(pitch/2) * np.cos(yaw/2) - np.cos(roll/2) * np.sin(pitch/2) * np.sin(yaw/2)
@@ -186,31 +153,80 @@ def quaternion2euler(x, y, z, w):
         return yaw_z / math.pi * 180 # in radians
 
 def listener():
-    global side, robotNum
+    global side, robotNum, run_mode
     rospy.init_node("better_cake")
     side = rospy.get_param('side')
     robotNum = rospy.get_param('robot')
-    rospy.Service('cake'+str(robotNum), cake, handle_cake)
-    # rospy.Subscriber("/robot1/ekf_pose", PoseWithCovarianceStamped, startPos1_callback)
-    # rospy.Subscriber("/robot2/ekf_pose", PoseWithCovarianceStamped, startPos2_callback)
-    rospy.Subscriber("/robot1/odom", Odometry, startPos1_callback)
-    rospy.Subscriber("/robot2/odom", Odometry, startPos2_callback)
-    rospy.Subscriber("/rival1/odom", Odometry, enemiesPos1_callback)
-    rospy.Subscriber("/rival2/odom", Odometry, enemiesPos2_callback)
+    # run_mode = rospy.get_param('run_mode')
+    rospy.Service('steal'+str(robotNum), steal, handle_steal)
+    publisher()
+    if run_mode == 'run':
+        rospy.Subscriber("/robot1/ekf_pose", PoseWithCovarianceStamped, startPos1_callback)
+        rospy.Subscriber("/robot2/ekf_pose", PoseWithCovarianceStamped, startPos2_callback)
+        rospy.Subscriber("/rival1/ekf_pose", PoseWithCovarianceStamped, enemiesPos1_callback)
+        rospy.Subscriber("/rival2/ekf_pose", PoseWithCovarianceStamped, enemiesPos2_callback)
+    elif run_mode == 'sim':
+        rospy.Subscriber("/robot1/odom", Odometry, startPos1_callback)
+        rospy.Subscriber("/robot2/odom", Odometry, startPos2_callback)
+        rospy.Subscriber("/rival1/odom", Odometry, enemiesPos1_callback)
+        rospy.Subscriber("/rival2/odom", Odometry, enemiesPos2_callback)
     # rospy.Subscriber("/plumpCakes", PoseArray, plumpCakes_callback)
     rospy.spin()
 
+def plumpCakes_callback(msg):
+    global plumpCakes, plates
+    for i in range(len(msg.poses)):
+        plumpCakes[i][0] = msg.poses[i].position.x * 1000
+        plumpCakes[i][1] = msg.poses[i].position.y * 1000
+        plumpCakes[i][2] = int(msg.poses[i].position.z)
+    for i in range(len(plates)):
+        if i %2 != side:
+            plates.pop(i)
+    for cake in plumpCakes:
+        for plate in plates:
+            if abs(cake[0] - plate[0]) < 225 and abs(cake[1] - plate[1]) < 225:
+                cake.append(plates.index(plate))
+            else:
+                plumpCakes.remove(cake)
+
 def publisher():
-    global quaternion, enemies, startPos, currMin, picked, used, robotNum, robotPose, tempFull, minAngle, tempAllCakes, outAngle, position, quaternion, tempGot, preposition
-    tempColorMin = 99999
-    tempPlatePicked =  [-1, -1]
-    for i in range(len(plumpCakes)):
-        for target in plumpCakes[i]:
-            if target not in used and target[0] != -1 and target[1] != -1:
-                if tempColorMin > euclidean(pos, target) - closerEnemy(target):
-                    tempColorMin = euclidean(pos, target) - closerEnemy(target)
-                    tempPlatePicked = target[3]
-    
+    global quaternion, enemies, startPos, picked, used, robotNum, robotPose, tempFull, minAngle, tempPicked, outAngle, quaternion
+    tempMinDist = 99999
+    tempPlatePicked = [-1, -1]
+    tempPicked = [-1, -1]
+    pos = startPos[robotNum]
+    for target in plumpCakes:
+        if target not in used and target[0] != -1 and target[1] != -1:
+            if tempMinDist > euclidean(pos, (target[0], target[1])) - closerEnemy((target[0], target[1])):
+                tempMinDist = euclidean(pos, (target[0], target[1])) - closerEnemy((target[0], target[1]))
+                tempPlatePicked = target[3]
+    print(tempPlatePicked)
+    tempMinDist = 99999
+    for target in plumpCakes:
+        if target[3]==tempPlatePicked and target[0] != -1 and target[1] != -1:
+             if tempMinDist > euclidean(pos, (target[0], target[1])):
+                tempMinDist = euclidean(pos, (target[0], target[1]))
+                tempPicked = target
+    print(picked)
+
+    anglePos = startPos[robotNum]
+    tempAng = list(absAng)
+    minAngle = 360
+    num = robotNum
+    tAngle = (np.rad2deg(np.arctan2(picked[1] - anglePos[1], picked[0] - anglePos[0])) - tempAng[robotNum] + 360) % 360
+    tAngles = [360, 360, 360, 360]
+    for i in range(4):
+        if tempFull[num][i] == 0:
+            tAngles[i] = (tAngle - i * 90 + 360) % 360
+            if tAngles[i] > 180:
+                tAngles[i] -= 360
+    for i in tAngles:
+        if abs(i) < abs(minAngle):
+            minAngle = i
+    outAngle[num] = minAngle + tempAng[num] + headAng
+
+    quaternion = euler2quaternion(0, 0, outAngle[robotNum] * math.pi / 180)
+    robotPublish(robotNum, tempPicked)
 
 if __name__=="__main__":
     try:

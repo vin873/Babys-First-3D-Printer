@@ -63,7 +63,7 @@ def finish4_callback(msg):
 
 def publisher():
     global finished, robot
-    rospy.init_node("hahap")
+    rospy.init_node("haha")
     rospy.Subscriber('/robot1/is_finish', Bool, finish1_callback)
     rospy.Subscriber('/robot2/is_finish', Bool, finish2_callback)
     rospy.Subscriber('/rival1/is_finish', Bool, finish3_callback)
