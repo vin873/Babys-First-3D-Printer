@@ -72,6 +72,14 @@ change the last 2 lines to :
     
 open new terminal
 
+1. Port照標籤插 適時把HUB重插
+
+2. roslaunch navigation_run hub.launch --> 機構2個ST
+
+3. roslaunch navigation_run run_robot2.launch --> Lidar, 底盤ST --> 成功顯示黃色beacaon distance / geometry error(需開rviz使用2D Pose Estimate調整到正確初始位置，可看牆壁方向/rviz_sim.rviz則要「第一個」2D Pose Estimate)
+
+4. (本機)roslaunch navigation_run open_rviz.launch --> launch內rviz檔案改成rviz2.rviz (或rviz_sim.rviz，但要左側逐個調topic)
+
 ## 8. Rosserial
 
 https://hackmd.io/@925/S1lQD_ljq/%2Fs%2Fryg2eQv4Q1Gplup81jfMRw%3Fboth%233-1-ROS-%25E7%25AB%25AF%25E8%25A8%25AD%25E5%25AE%259A
