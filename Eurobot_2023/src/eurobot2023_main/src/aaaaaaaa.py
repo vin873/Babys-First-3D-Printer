@@ -49,41 +49,44 @@ def publisher():
                 print("======================================== \n")
                 continue
             missionStr.data = input("mission : ")
-            if missionStr.data[0] != 'b' and missionStr.data[0] != 'y' and missionStr.data[0] != 'p' and missionStr.data[0] != 'c' and missionStr.data[0] != 'o' and missionStr.data[0] != 'h' and missionStr.data[0] != 's' and missionStr.data[0] != 'v' and missionStr.data[0] != 'u' and missionStr.data[0] != 'd' and missionStr.data[0] != 'f':
+            if missionStr.data == 'reset':
+                for i in range(4):
+                    missionStr.data = 'o' + str(i)
+                    rospy.sleep(0.3)
+                    pub.publish(missionStr)
+                rospy.sleep(1)
+                for i in range(4):
+                    missionStr.data = 'c' + str(i)
+                    rospy.sleep(0.3)
+                    pub.publish(missionStr)
+            
+            elif missionStr.data == 'open':
+                for i in range(4):
+                    missionStr.data = 'o' + str(i)
+                    rospy.sleep(0.3)
+                    pub.publish(missionStr)
+
+            elif (missionStr.data[0] == 'b' or missionStr.data[0] == 'y' or missionStr.data[0] == 'p') and len(missionStr.data) == 6:
+                ms = missionStr.data
+                for i in range(3):
+                    missionStr.data = ms[2*i] + ms[2*i+1]
+                    rospy.sleep(0.3)
+                    pub.publish(missionStr)
+                rospy.sleep(1)
+                for i in range(3):
+                    missionStr.data = 'c' + ms[2*i+1]
+                    rospy.sleep(0.3)
+                    pub.publish(missionStr)
+
+            elif missionStr.data[0] != 'b' and missionStr.data[0] != 'y' and missionStr.data[0] != 'p' and missionStr.data[0] != 'c' and missionStr.data[0] != 'o' and missionStr.data[0] != 'h' and missionStr.data[0] != 's' and missionStr.data[0] != 'v' and missionStr.data[0] != 'u' and missionStr.data[0] != 'd' and missionStr.data[0] != 'f':
                 print("Input error !!\n")
                 print("======================================== \n")
                 continue
-            elif missionStr.data == 'reset':
-                missionStr.data == 'o0'
-                rospy.sleep(0.3)
-                pub.publish(missionStr)
-                missionStr.data == 'o1'
-                rospy.sleep(0.3)
-                pub.publish(missionStr)
-                missionStr.data == 'o2'
-                rospy.sleep(0.3)
-                pub.publish(missionStr)
-                missionStr.data == 'o3'
-                rospy.sleep(0.3)
-                pub.publish(missionStr)
-                rospy.sleep(1)
-                missionStr.data == 'c0'
-                rospy.sleep(0.3)
-                pub.publish(missionStr)
-                missionStr.data == 'c1'
-                rospy.sleep(0.3)
-                pub.publish(missionStr)
-                missionStr.data == 'c2'
-                rospy.sleep(0.3)
-                pub.publish(missionStr)
-                missionStr.data == 'c3'
-                rospy.sleep(0.3)
-                pub.publish(missionStr)
             else:
                 pub.publish(missionStr)
-                print("Mission Published !!\n")
-                # finished = False
-                print("======================================== \n")
+                
+            print("Mission Published !!\n")
+            print("======================================== \n")
 
         rospy.sleep(1)
 

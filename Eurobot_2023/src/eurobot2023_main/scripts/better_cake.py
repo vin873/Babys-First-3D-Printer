@@ -2,7 +2,8 @@
 
 import rospy
 from std_msgs.msg import Bool
-from std_msgs.msg import Float64
+from std_msgs.msg import Int16MultiArray
+from std_msgs.msg import Int32MultiArray
 from geometry_msgs.msg import Pose
 from geometry_msgs.msg import PoseWithCovarianceStamped
 from nav_msgs.msg import Odometry
@@ -18,7 +19,7 @@ from eurobot2023_main.srv import *
 browns = [[1125, 725], [1125, 1275], [1875, 725], [1875, 1275]]
 yellows = [[775, 225], [775, 1775], [2225, 225], [2225, 1775]]
 pinks = [[575, 225], [575, 1775], [2425, 225], [2425, 1775]]
-allCakes = [browns, yellows, pinks]
+allCakes = [list(browns), list(yellows), list(pinks)]
 
 tempAllCakes = []
 for i in range(3):
@@ -32,6 +33,7 @@ absAng = [0, 0]
 
 picked = [[[-1, -1],  [-1, -1],  [-1, -1]], [[-1, -1],  [-1, -1],  [-1, -1]]]
 used = []
+adjustedNum = []
 got = [[0, 0, 0], [0, 0, 0]]  # brown, yellow, pink
 tempGot = [[0, 0, 0], [0, 0, 0]]
 fullness = [[0, 0, 0, 0], [0, 0, 0, 0]]
@@ -77,20 +79,18 @@ def enemiesPos2_callback(msg):
     enemies[1][0] = msg.pose.pose.position.x * 1000
     enemies[1][1] = msg.pose.pose.position.y * 1000
 
-def allCakes_callback(msg):
-    global allCakes
-    lost = 0
-    id = msg.header.frame_id
-    for c in range(3):
-        num = int(id[c])
-        for i in range(4):
-            if i < num:
-                allCakes[c][i][0] = msg.poses[4*c+i-lost].position.x * 1000
-                allCakes[c][i][1] = msg.poses[4*c+i-lost].position.y * 1000
-            else:
-                lost += 1
-                allCakes[c][i] = [-1, -1]     
-    # print(allCakes)
+def adjust_callback(msg):
+    global adjustedNum, allCakes
+    allCakes[math.floor(msg.position.z/4)][int(msg.position.z)%4] = [msg.position.x * 1000, msg.position.y * 1000]
+    adjustedNum.append(msg.position.z)
+
+def got_callback(msg):
+    for i in range(3):
+        got[robotNum][i] = msg.data[i]
+
+def full_callback(msg):
+    for i in range(4):
+        fullness[robotNum][i] = msg.data[i+1]
 
 def tPoint(mode, pos, target):
     # print(pos ,target)
@@ -131,7 +131,7 @@ def tPoint(mode, pos, target):
                 point[0] = target[0] + dis*math.cos(math.atan(y/x))
         return point
 
-def robotPublish(num, color):
+def robotPublish(num, color, count):
     global robotPose, tempFull
 
     c = '?'
@@ -144,8 +144,11 @@ def robotPublish(num, color):
 
     robotPose.header.frame_id += c
     for full in tempFull[num]:
-        if full == color+1:
-            robotPose.header.frame_id += str(tempFull[num].index(full))
+        if full == count + 1:
+            door = int(tempFull[num].index(full))
+            if door == 4:
+                door = 0
+            robotPose.header.frame_id += str(door)
     robotPose.header.stamp = rospy.Time.now()
 
     pose = Pose()
@@ -247,7 +250,7 @@ def safest(pos, num):
     return tempColorPicked
 
 def where2go(pos, num):
-    global picked, enemies, currMin, fullness, absAng, minAngle, used, outAngle, tempAllCakes, allCakes, tempGot, headAng
+    global picked, enemies, currMin, fullness, absAng, minAngle, used, outAngle, tempAllCakes, allCakes, tempGot, headAng, tempFull
     
     # print(allCakes)
     tempGot = [[0, 0, 0], [0, 0, 0]]
@@ -335,14 +338,14 @@ def where2go(pos, num):
             tAngles = [360, 360, 360, 360]
             for i in range(4):
                 if tempFull[num][i] == 0:
-                    tAngles[i] = (tAngle - i * 90 + 360) % 360
-                    if tAngles[i] > 180:
-                        tAngles[i] -= 360
+                    tAngles[i] = (tAngle - i * 90 + 360 - headAng) % 360
+                    # if tAngles[i] > 180:
+                    #     tAngles[i] -= 360
             for i in tAngles:
                 if abs(i) < abs(minAngle):
                     minAngle = i
                     minAngleNum = tAngles.index(i)
-            outAngle[num][j] = minAngle + tempAng[num] + headAng
+            outAngle[num][j] = minAngle + tempAng[num] + 2*headAng
             # print(outAngle[num], tempAng[num], tAngles, minAngle, tAngle)
             tempAng[num] = outAngle[num][j] - headAng
             tempFull[num][minAngleNum] = j+1
@@ -357,6 +360,9 @@ def listener():
     side = rospy.get_param('side')
     robotNum = rospy.get_param('robot')
     run_mode = rospy.get_param('run_mode')
+    rospy.Subscriber('adjustCake', Pose, adjust_callback)
+    rospy.Subscriber('gotcake'+str(robotNum), Int32MultiArray, got_callback)
+    rospy.Subscriber('donefullness'+str(robotNum), Int16MultiArray, full_callback)
     rospy.Service('cake'+str(robotNum), cake, handle_cake)
     if run_mode == 'run':
         rospy.Subscriber("/robot1/ekf_pose", PoseWithCovarianceStamped, startPos1_callback)
@@ -368,7 +374,7 @@ def listener():
         rospy.Subscriber("/robot2/odom", Odometry, startPos2_callback)
         rospy.Subscriber("/rival1/odom", Odometry, enemiesPos1_callback)
         rospy.Subscriber("/rival2/odom", Odometry, enemiesPos2_callback)
-    rospy.Subscriber("/allCakes", PoseArray, allCakes_callback)
+    # rospy.Subscriber("/allCakes", PoseArray, allCakes_callback)
     rospy.spin()
 
 def publisher():
@@ -412,20 +418,41 @@ def publisher():
     if startPos[robotNum] != [-1, -1]:
         robotPose.poses=[]
         robotPose.header.frame_id = ''
+        flag = 0
+        count = 0
         for pos in range(3):
-            if pos == 0:
-                preposition[0] = startPos[robotNum][0] * 0.001
-                preposition[1] = startPos[robotNum][1] * 0.001
-            else:
-                preposition = list(tPoint('c', preposition, position))
-            for axis in range(2):                    
-                for i in range(3):
-                    if picked[robotNum][pos] in allCakes[i]:
-                        color = i
-                position[axis] = picked[robotNum][pos][axis] * 0.001
-            quaternion = euler2quaternion(0, 0, outAngle[robotNum][pos] * math.pi / 180)
-            robotPublish(robotNum, color)
-        # print(picked)
+            if picked[robotNum][pos] != [-1, -1]:
+                if flag:
+                    position = [-1, -1]
+                    color = -1
+                    robotPublish(robotNum, color, pos)
+                else:
+                    if count == 0:
+                        preposition[0] = startPos[robotNum][0] * 0.001
+                        preposition[1] = startPos[robotNum][1] * 0.001
+                    else:
+                        preposition = list(tPoint('c', preposition, position))
+                    for axis in range(2):                    
+                        for i in range(3):
+                            if picked[robotNum][pos] in allCakes[i]:
+                                color = i
+                        position[axis] = picked[robotNum][pos][axis] * 0.001
+                    quaternion = euler2quaternion(0, 0, outAngle[robotNum][pos] * math.pi / 180)
+                    robotPublish(robotNum, color, pos)
+                    count += 1
+                    for i in range(3):
+                        if picked[robotNum][pos] in allCakes[i] and 4*i+allCakes[i].index(picked[robotNum][pos]) in adjustedNum:
+                            robotPose.poses[2*pos-1].position.x = -777
+                            flag = 1
+                            break
+        for i in range(3-count):
+            position = [-1, -1]
+            color = -1
+            robotPublish(robotNum, color, pos)
+        # print(robotPose.header.frame_id)
+        # print(outAngle[robotNum])
+        # for i in range(3): 
+        #     print(i, " : [", robotPose.poses[i].position.x, robotPose.poses[i].position.y, "]")
 
 if __name__=="__main__":
     try:

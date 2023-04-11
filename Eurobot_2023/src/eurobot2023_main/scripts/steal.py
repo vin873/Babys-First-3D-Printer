@@ -154,7 +154,7 @@ def quaternion2euler(x, y, z, w):
 
 def listener():
     global side, robotNum, run_mode
-    rospy.init_node("better_cake")
+    rospy.init_node("steal")
     side = rospy.get_param('side')
     robotNum = rospy.get_param('robot')
     # run_mode = rospy.get_param('run_mode')

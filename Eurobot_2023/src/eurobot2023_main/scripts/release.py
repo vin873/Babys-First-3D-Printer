@@ -15,10 +15,10 @@ from geometry_msgs.msg import Quaternion
 import math
 from eurobot2023_main.srv import *
 
-point = [[[[2.825, 1.825, 135], [2.725, 1.725, 135], [2.825, 1.825, 270], [2.725, 1.725, 270]] # B4
-        , [[0.175, 0.175, 315], [0.275, 0.275, 315], [0.175, 0.175, 90], [0.275, 0.275, 90]]]  # B0
-        ,[[[2.825, 0.175, 225], [2.725, 0.275, 225], [2.825, 0.175, 90], [2.725, 0.275, 90]]   # G3
-        , [[0.175, 1.825, 45], [0.275, 1.725, 45], [0.175, 1.825, 270], [0.275, 1.725, 270]]]] # G0
+point = [[[[2.825, 1.825, 135], [2.675, 1.675, 135], [2.825, 1.825, 270], [2.675, 1.675, 270]] # B4
+        , [[0.175, 0.175, 315], [0.325, 0.325, 315], [0.175, 0.175, 90], [0.325, 0.325, 90]]]  # B0
+        ,[[[2.825, 0.175, 225], [2.675, 0.325, 225], [2.825, 0.175, 90], [2.675, 0.325, 90]]   # G3
+        , [[0.175, 1.825, 45], [0.325, 1.675, 45], [0.175, 1.825, 270], [0.325, 1.675, 270]]]] # G0
 
 robotNum = 0
 side = 0
@@ -106,8 +106,8 @@ def publisher(num):
 
     for i in range(4):
         
-        ang = (point[side][num][i][2] - empty*90) * math.pi / 180
-        robotAng = euler2quaternion(0, 0, ang+headAng)
+        ang = (point[side][num][i][2] - empty*90 + headAng) * math.pi / 180
+        robotAng = euler2quaternion(0, 0, ang)
     
         pose = Pose()
         pose.position.x = point[side][num][i][0]
@@ -117,6 +117,7 @@ def publisher(num):
         pose.orientation.z = robotAng.z
         pose.orientation.w = robotAng.w
         robotPose.poses.append(pose)
+        # print((point[side][num][i][2] - empty*90+headAng))
 
 if __name__=="__main__":
     try:

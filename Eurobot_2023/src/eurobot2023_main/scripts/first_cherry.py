@@ -107,6 +107,7 @@ def where2suck(pos, num):
     global tempMin, tempSide, used, cherryE
     tempMin[num] = 99999
     tempChoice = [-1, -1]
+    enemyChoice = [-1, -1]
     tempSide[num] = [[-1, -1], [-1, -1]]
 
     for sides in range(6):
