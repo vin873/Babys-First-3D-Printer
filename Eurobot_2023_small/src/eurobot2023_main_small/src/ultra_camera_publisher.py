@@ -1,6 +1,7 @@
 #! /usr/bin/env python3
 
 import rospy
+import math
 from geometry_msgs.msg import Pose
 from geometry_msgs.msg import PoseArray
 
@@ -11,18 +12,23 @@ allCakes = [browns, yellows, pinks]
 
 def publisher():
     rospy.init_node("ultra_camera_publisher")
-    pub = rospy.Publisher('/allCakes', PoseArray, queue_size=1000)
-    caker = PoseArray()
-    caker.header.stamp = rospy.Time.now()
-    for color in allCakes:
-        caker.header.frame_id += str(len(color))
-        for cakee in color:
-            pose = Pose()
-            pose.position.x = cakee[0]
-            pose.position.y = cakee[1]
-            caker.poses.append(pose)
+    pub1 = rospy.Publisher('/adjustCake', Pose, queue_size=1000)
+    pub2 = rospy.Publisher('/onRobot/relative_where', Pose, queue_size=1000)
+
+    caker = Pose()
+    changeNum = 1
+    changedCake = [1.125, 1.375]
+    caker.position.x, caker.position.y = changedCake[0], changedCake[1]
+    caker.position.z = changeNum
     rospy.sleep(0.3)
-    pub.publish(caker)
+    pub1.publish(caker)
+
+    caker = Pose()
+    changedCake = [0, -0.3]
+    caker.position.x, caker.position.y = changedCake[0], changedCake[1]
+    caker.position.z = 3
+    rospy.sleep(0.5)
+    pub2.publish(caker)
 
 if __name__=="__main__":
     try:

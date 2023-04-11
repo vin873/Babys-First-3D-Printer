@@ -61,6 +61,8 @@ add_service_files(
   cake.srv
   cherry.srv
   release.srv
+  steal.srv
+  eat.srv
 )
 
 ## Generate actions in the 'action' folder
@@ -171,6 +173,8 @@ catkin_install_python(PROGRAMS
   scripts/better_cake.py
   scripts/first_cherry.py
   scripts/release.py
+  scripts/steal.py
+  scripts/eat.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 
