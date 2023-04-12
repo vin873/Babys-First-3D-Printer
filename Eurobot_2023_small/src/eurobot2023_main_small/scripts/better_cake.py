@@ -41,6 +41,7 @@ tempFull = [[0, 0, 0, 0], [0, 0, 0, 0]]
 currMin = [99999, 99999]
 minAngle = 360
 headAng = -45
+camAng = 45
 outAngle = [[0, 0, 0], [0, 0, 0]]
 dockDis = 0.240
 cakeDis = 0.075
@@ -442,17 +443,24 @@ def publisher():
                     count += 1
                     for i in range(3):
                         if picked[robotNum][pos] in allCakes[i] and 4*i+allCakes[i].index(picked[robotNum][pos]) in adjustedNum:
-                            robotPose.poses[2*pos-1].position.x = -777
+                            robotPose.poses[2*pos+1].position.x = -777
+                            camtAng = (np.rad2deg(np.arctan2(picked[robotNum][pos][1] - preposition[1]*1000, picked[robotNum][pos][0] - preposition[0]*1000)) + 360 - camAng) % 360
+                            quat = euler2quaternion(0, 0, camtAng*math.pi/180)
+                            robotPose.poses[2*pos].orientation.x = quat.x
+                            robotPose.poses[2*pos].orientation.y = quat.y
+                            robotPose.poses[2*pos].orientation.z = quat.z
+                            robotPose.poses[2*pos].orientation.w = quat.w
                             flag = 1
                             break
         for i in range(3-count):
             position = [-1, -1]
             color = -1
             robotPublish(robotNum, color, pos)
+        # print(picked[robotNum])
         # print(robotPose.header.frame_id)
         # print(outAngle[robotNum])
         # for i in range(3): 
-        #     print(i, " : [", robotPose.poses[i].position.x, robotPose.poses[i].position.y, "]")
+        #     print(i, " : [", robotPose.poses[i].position.x, robotPose.poses[i].position.y, quaternion2euler(robotPose.poses[i].orientation.x, robotPose.poses[i].orientation.y, robotPose.poses[i].orientation.z, robotPose.poses[i].orientation.w), "]")
 
 if __name__=="__main__":
     try:
