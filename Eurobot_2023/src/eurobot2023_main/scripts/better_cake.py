@@ -41,6 +41,7 @@ tempFull = [[0, 0, 0, 0], [0, 0, 0, 0]]
 currMin = [99999, 99999]
 minAngle = 360
 headAng = -45
+camAng = 45
 outAngle = [[0, 0, 0], [0, 0, 0]]
 dockDis = 0.240
 cakeDis = 0.075
@@ -85,10 +86,12 @@ def adjust_callback(msg):
     adjustedNum.append(msg.position.z)
 
 def got_callback(msg):
+    global got
     for i in range(3):
         got[robotNum][i] = msg.data[i]
 
 def full_callback(msg):
+    global fullness
     for i in range(4):
         fullness[robotNum][i] = msg.data[i+1]
 
@@ -237,12 +240,12 @@ def whatColorGet(pos, num):
             tempGot[num][i] = 1
 
 def safest(pos, num):
-    global tempGot, allCakes
     tempColorMin = 99999
     tempColorPicked =  [-1, -1]
     for i in range(3):
         if tempGot[num][i] != 1:
             for target in allCakes[i]:
+                # print("ss", num, target)
                 if target not in used and target != [-1, -1]:
                     if tempColorMin > euclidean(pos, target) - closerEnemy(target):
                         tempColorMin = euclidean(pos, target) - closerEnemy(target)
@@ -253,7 +256,13 @@ def where2go(pos, num):
     global picked, enemies, currMin, fullness, absAng, minAngle, used, outAngle, tempAllCakes, allCakes, tempGot, headAng, tempFull
     
     # print(allCakes)
-    tempGot = [[0, 0, 0], [0, 0, 0]]
+    # print(got)
+    tempGot[num] = list(got[num])
+    tempAllCakes = []
+    for i in range(3):
+        tempAllCakes.append([[[-1, -1], [-1, -1], [-1, -1], [-1, -1]], [[-1, -1], [-1, -1], [-1, -1], [-1, -1]]])
+
+    # tempGot = list(got)
 
     if got[num] == [1, 1, 1]:
         return []
@@ -276,7 +285,7 @@ def where2go(pos, num):
             tempAllCakes[i][num] = [[99999, 99999], [99999, 99999], [99999, 99999], [99999, 99999]]
 
     orders = list(permutations([tempAllCakes[0][num], tempAllCakes[1][num], tempAllCakes[2][num]]))
-    # print(tempAllCakes)
+    # print(tempAllCakes, num, picked[num])
 
     for order in orders:
         for i in order[0]:
@@ -299,10 +308,15 @@ def where2go(pos, num):
                             if tempDis < enemyDis and tempDis < tempMin:
                                 tempMin = tempDis
                                 picked[num] = [i, j, k]
+                                for a in picked[num]:
+                                    if a == pos:
+                                        picked[num][picked[num].index(a)] = [-1, -1]
                                 # print(num, picked[num])
                                 for o in order:
                                     if o == [[99999, 99999], [99999, 99999], [99999, 99999], [99999, 99999]]:
                                         picked[num][order.index(o)] =  [-1, -1]
+
+    # print("pp", num, picked[num])
 
     if picked[num] == [[-1, -1], [-1, -1], [-1, -1]]:
         # print("so safe", num)
@@ -383,7 +397,7 @@ def publisher():
 
     picked = [[[-1, -1],  [-1, -1],  [-1, -1]], [[-1, -1],  [-1, -1],  [-1, -1]]]
     used = []
-    tempGot = [[0, 0, 0], [0, 0, 0]]
+    tempGot[robotNum] = list(got[robotNum])
     tempFull = [[0, 0, 0, 0], [0, 0, 0, 0]]
     currMin = [99999, 99999]
     minAngle = 360
@@ -415,6 +429,8 @@ def publisher():
             currMin[0] = 99999
             where2go(startPos[0], 0)
 
+    # print("ppp", picked[robotNum])
+
     if startPos[robotNum] != [-1, -1]:
         robotPose.poses=[]
         robotPose.header.frame_id = ''
@@ -442,17 +458,24 @@ def publisher():
                     count += 1
                     for i in range(3):
                         if picked[robotNum][pos] in allCakes[i] and 4*i+allCakes[i].index(picked[robotNum][pos]) in adjustedNum:
-                            robotPose.poses[2*pos-1].position.x = -777
+                            robotPose.poses[2*pos+1].position.x = -777
+                            camtAng = (np.rad2deg(np.arctan2(picked[robotNum][pos][1] - preposition[1]*1000, picked[robotNum][pos][0] - preposition[0]*1000)) + 360 - camAng) % 360
+                            quat = euler2quaternion(0, 0, camtAng*math.pi/180)
+                            robotPose.poses[2*pos].orientation.x = quat.x
+                            robotPose.poses[2*pos].orientation.y = quat.y
+                            robotPose.poses[2*pos].orientation.z = quat.z
+                            robotPose.poses[2*pos].orientation.w = quat.w
                             flag = 1
                             break
         for i in range(3-count):
             position = [-1, -1]
             color = -1
             robotPublish(robotNum, color, pos)
+        # print("picked", picked[robotNum])
         # print(robotPose.header.frame_id)
         # print(outAngle[robotNum])
-        # for i in range(3): 
-        #     print(i, " : [", robotPose.poses[i].position.x, robotPose.poses[i].position.y, "]")
+        # for i in range(6): 
+        #     print(i, " : [", robotPose.poses[i].position.x, robotPose.poses[i].position.y, quaternion2euler(robotPose.poses[i].orientation.x, robotPose.poses[i].orientation.y, robotPose.poses[i].orientation.z, robotPose.poses[i].orientation.w), "]")
 
 if __name__=="__main__":
     try:

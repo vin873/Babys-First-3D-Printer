@@ -3,6 +3,7 @@
 import rospy
 from std_msgs.msg import Bool
 from std_msgs.msg import Float64
+from geometry_msgs.msg import Point
 from geometry_msgs.msg import Pose
 from geometry_msgs.msg import PoseWithCovarianceStamped
 from nav_msgs.msg import Odometry
@@ -86,7 +87,12 @@ def startPos_callback(msg):
 
 def camera_callback(msg):
     global cameraPos
-    cameraPos[0], cameraPos[1] = msg.position.x*1000, msg.position.y*1000
+    if msg.z==-1:
+            cameraPos=[-1,-1]
+    # else if msg.z==-1:
+    else:
+        cameraPos[0], cameraPos[1] = msg.x*1000, msg.y*1000
+    print(cameraPos)
 
 def robotPublish(color):
     global robotPose, tempFull, cameraPos
@@ -102,7 +108,7 @@ def robotPublish(color):
         if full == 1:
             robotPose.header.frame_id += str(tempFull.index(full))
     robotPose.header.stamp = rospy.Time.now()
-
+    
     pose = Pose()
     pt = tPoint('d', preposition, position)
     # print(pt)
@@ -123,7 +129,7 @@ def robotPublish(color):
     pose2.orientation.z = quaternion.z
     pose2.orientation.w = quaternion.w
     robotPose.poses.append(pose2)
-    print("eat : ", robotPose)
+    # print("eat : ", robotPose)
 
 def euler2quaternion(roll, pitch, yaw):
     """
@@ -204,7 +210,7 @@ def listener():
     rospy.init_node("eat")
     robotNum = rospy.get_param('robot')
     run_mode = rospy.get_param('run_mode')
-    rospy.Subscriber("/onRobot/relative_where", Pose, camera_callback)
+    rospy.Subscriber("/onRobot/relative_where", Point, camera_callback)
     rospy.Service('eat'+str(robotNum), eat, handle_eat)
     if run_mode == 'run':
         rospy.Subscriber("/robot" + str(robotNum+1) +"/ekf_pose", PoseWithCovarianceStamped, startPos_callback)
@@ -213,7 +219,7 @@ def listener():
     rospy.spin()
 
 def publisher(color):
-    global quaternion, startPos, robotNum, robotPose, tempFull, minAngle, outAngle, position, quaternion, preposition
+    global quaternion, startPos, robotNum, robotPose, tempFull, minAngle, outAngle, position, quaternion, preposition, cameraPos
 
     tempFull = [0, 0, 0, 0]
     minAngle = 360
@@ -222,18 +228,20 @@ def publisher(color):
     quaternion = Quaternion()
     robotPose = PoseArray()
 
-    where2go(startPos)
+    if cameraPos != [-1, -1]:
+        where2go(startPos)
 
-    if startPos != [-1, -1]:
-        robotPose.poses=[]
-        robotPose.header.frame_id = ''
+        if startPos != [-1, -1]:
+            robotPose.poses=[]
+            robotPose.header.frame_id = ''
 
-        for axis in range(2):
-            preposition[axis] = startPos[axis] * 0.001                    
-            position[axis] = cameraPos[axis] * 0.001 + preposition[axis]
+            for axis in range(2):
+                preposition[axis] = startPos[axis] * 0.001                    
+                position[axis] = cameraPos[axis] * 0.001 + preposition[axis]
 
-        quaternion = euler2quaternion(0, 0, outAngle * math.pi / 180)
-        robotPublish(color)
+            quaternion = euler2quaternion(0, 0, outAngle * math.pi / 180)
+            robotPublish(color)
+        cameraPos = [-1, -1]
         # print(picked)
 
 if __name__=="__main__":

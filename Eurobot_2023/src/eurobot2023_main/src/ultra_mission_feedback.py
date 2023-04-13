@@ -27,22 +27,22 @@ def mission_callback(msg):
         arr[0] = 1
     elif msg.data[0] == 'c':
         arr[0] = 1
-        publisher(1)
+        # publisher(1)
     elif msg.data[0] == 'o':
         # arr[int(msg.data[1])+1] = 0
         arr[0] = 1
-        publisher(1)
+        # publisher(1)
     elif msg.data[0] == 's':
         arr[0] = 1
         arr2[int(msg.data[1])] = 0
         publisher2()
-        publisher(3)
+        # publisher(3)
     elif msg.data[0] == 'v':
         arr[0] = 1
-        publisher(1)
+        # publisher(1)
     elif msg.data[0] == 'u':
         arr[0] = 1
-        publisher(10)
+        publisher(5)
     elif msg.data[0] == 'f' or msg.data[0] == 'd':
         arr[0] = 1
     

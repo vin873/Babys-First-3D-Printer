@@ -15,10 +15,10 @@ from geometry_msgs.msg import Quaternion
 import math
 from eurobot2023_main.srv import *
 
-point = [[[[2.825, 1.825, 135], [2.675, 1.675, 135], [2.825, 1.825, 270], [2.675, 1.675, 270]] # B4
-        , [[0.175, 0.175, 315], [0.325, 0.325, 315], [0.175, 0.175, 90], [0.325, 0.325, 90]]]  # B0
-        ,[[[2.825, 0.175, 225], [2.675, 0.325, 225], [2.825, 0.175, 90], [2.675, 0.325, 90]]   # G3
-        , [[0.175, 1.825, 45], [0.325, 1.675, 45], [0.175, 1.825, 270], [0.325, 1.675, 270]]]] # G0
+point = [[[[2.800, 1.800, 135], [2.625, 1.625, 135], [2.725, 1.725, 270], [2.575, 1.575, 270]] # B4
+        , [[0.225, 0.225, 315], [0.375, 0.375, 315], [0.225, 0.225, 90], [0.375, 0.375, 90]]]  # B0
+        ,[[[2.775, 0.175, 225], [2.625, 0.325, 225], [2.775, 0.175, 90], [2.625, 0.325, 90]]   # G3
+        , [[0.225, 1.25, 45], [0.325, 1.625, 45], [0.225, 1.225, 270], [0.375, 1.625, 270]]]] # G0
 
 robotNum = 0
 side = 0
@@ -35,6 +35,7 @@ def handle_release(req):
     return releaseResponse(robotPose)
 
 def mission_callback(msg):
+    global fullness
     for i in range(4):
         fullness[i] = msg.data[i+1]
 
@@ -92,16 +93,18 @@ def publisher(num):
     global robotPose
 
     for i in range(4):
-            if fullness[i] == 0:
-                 empty = i
-                 break
+        if fullness[i] == 0:
+            empty = i
+            break
     # print(empty)
-    if empty < 2:
-        robotPose.header.frame_id = str(empty+1) + str(empty+2)
+    if empty == 0:
+        robotPose.header.frame_id = '31'
+    elif empty == 1:
+         robotPose.header.frame_id = '02'
     elif empty == 2:
-         robotPose.header.frame_id = '30'
+         robotPose.header.frame_id = '13'
     elif empty == 3:
-         robotPose.header.frame_id = '01'
+         robotPose.header.frame_id = '20'
     robotPose.header.stamp = rospy.Time.now()
 
     for i in range(4):

@@ -1,17 +1,19 @@
 #! /usr/bin/env python3
 
 import rospy
+import math
 from std_msgs.msg import Bool
 from std_msgs.msg import Int32MultiArray
 from nav_msgs.msg import Odometry
 from geometry_msgs.msg import Pose
+from geometry_msgs.msg import Quaternion
 from geometry_msgs.msg import PoseWithCovarianceStamped
 from geometry_msgs.msg import PoseArray
 import numpy as np
 from scipy.spatial.distance import euclidean
 from eurobot2023_main.srv import *
 
-cherries = [[[200, 800], [400, 800]], [[1350, 1800], [1650, 1800]], [[2600, 800], [2800, 800]], [[1350, 200], [1650, 200]], [[200, 1200], [400, 1200]], [[2600, 1200], [2800, 1200]]]
+cherries = [[[200, 800], [400, 800]], [[1350, 1800], [1650, 1800]], [[2575, 800], [2825, 800]], [[1300, 250], [1650, 250]], [[200, 1200], [400, 1200]], [[2600, 1200], [2800, 1200]]]
 
 # subscribe cherries’ existence
 cherryE = [1, 1, 1, 1]
@@ -57,28 +59,39 @@ def enemiesPos2_callback(msg):
 
 def cherryPublish():
     global robotPose, pickedSide
-    side = pickedSide[robotNum]
+    cside = pickedSide[robotNum]
     # if side != [[-1, -1], [-1, -1]]:
     num = '-'
     for i in cherries:
-        if side[0] in i:
+        if cside[0] in i:
             if cherries.index(i) < 4:
                 num = str(cherries.index(i))
             elif cherries.index(i) == 4:
-                num = '0'
+                num = '4'
             elif cherries.index(i) == 5:
-                num = '2'
+                num = '5'
     robotPose.header.frame_id = num
     robotPose.header.stamp = rospy.Time.now()
 
-    for i in side:
+    if cside[0][0] <= 500:
+        cAng = 90
+    elif cside[0][0] <= 1000:
+        cAng = 180
+    elif cside[0][0] <= 1500:
+        cAng = 90
+    else:
+        cAng = 180
+    quat = Quaternion()
+    quat = euler2quaternion(0, 0, cAng*math.pi/180)
+
+    for i in cside:
         pose = Pose()
         pose.position.x = i[0] * 0.001
         pose.position.y = i[1] * 0.001
-        pose.orientation.x = 0
-        pose.orientation.y = 0
-        pose.orientation.z = 0
-        pose.orientation.w = 1
+        pose.orientation.x = quat.x
+        pose.orientation.y = quat.y
+        pose.orientation.z = quat.z
+        pose.orientation.w = quat.w
         robotPose.poses.append(pose)
 
 def cherry_callback(msg):
@@ -89,6 +102,25 @@ def cherryE_callback(msg):
     # print(cherry)
     for i in range(4):
         cherryE[i] = msg.data[i]
+
+def euler2quaternion(roll, pitch, yaw):
+    """
+    Convert an Euler angle to a quaternion.
+
+    Input
+    :param roll: The roll (rotation around x-axis) angle in radians.
+    :param pitch: The pitch (rotation around y-axis) angle in radians.
+    :param yaw: The yaw (rotation around z-axis) angle in radians.
+
+    Output
+    :return qx, qy, qz, qw: The orientation in quaternion [x,y,z,w] format
+    """
+    qx = np.sin(roll/2) * np.cos(pitch/2) * np.cos(yaw/2) - np.cos(roll/2) * np.sin(pitch/2) * np.sin(yaw/2)
+    qy = np.cos(roll/2) * np.sin(pitch/2) * np.cos(yaw/2) + np.sin(roll/2) * np.cos(pitch/2) * np.sin(yaw/2)
+    qz = np.cos(roll/2) * np.cos(pitch/2) * np.sin(yaw/2) - np.sin(roll/2) * np.sin(pitch/2) * np.cos(yaw/2)
+    qw = np.cos(roll/2) * np.cos(pitch/2) * np.cos(yaw/2) + np.sin(roll/2) * np.sin(pitch/2) * np.sin(yaw/2)
+
+    return Quaternion(qx, qy, qz, qw)
 
 def closerEnemy(target):
     global enemies
