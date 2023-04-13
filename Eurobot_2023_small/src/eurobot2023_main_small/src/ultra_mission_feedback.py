@@ -42,7 +42,7 @@ def mission_callback(msg):
         # publisher(1)
     elif msg.data[0] == 'u':
         arr[0] = 1
-        publisher(15)
+        publisher(5)
     elif msg.data[0] == 'f' or msg.data[0] == 'd':
         arr[0] = 1
     

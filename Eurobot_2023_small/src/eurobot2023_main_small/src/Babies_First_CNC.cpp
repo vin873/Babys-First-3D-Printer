@@ -215,9 +215,9 @@ public:
 
     void done_fullness_callback(const std_msgs::Int16MultiArray::ConstPtr &msg)
     {
-        doing = false;
         if (msg->data.at(0) == 1)
         {
+            doing = false;
             mission_success = true;
             ROS_INFO("Mission finished!");
         }
@@ -227,6 +227,7 @@ public:
         }
         else
         {
+            doing = false;
             ROS_ERROR("Mission failed!");
         }
         for (int i = 1;i < 5;i++)
@@ -853,7 +854,7 @@ int main(int argc, char **argv)
 
                 case BASKET:
                     
-                    mission_timeOut = 20;
+                    mission_timeOut = 15;
                     if (ros::Time::now().toSec() - initialTime.toSec() >= go_home_time && !going_home)
                     {
                         now_Mission = HOME;
@@ -945,8 +946,12 @@ int main(int argc, char **argv)
                             geometry_msgs::PoseStamped somewhere;
                             mainClass.poseStamped_set(0, somewhere, 2.775, 1.775, 0, 1);
                             mainClass._where2go.publish(somewhere);
-                            ROS_INFO("Heading over to x:[%.3f] y:[%.3f]", release_point[reCake].pose.position.x, release_point[reCake].pose.position.y);
+                            ROS_INFO("Heading over to x:[%.3f] y:[%.3f]", somewhere.pose.position.x, somewhere.pose.position.y);
                             somewhere_once = true;
+                        }
+                        if (arrived)
+                        {
+                            arrived = false;
                         }
                     }
                     else if (!got_release_point && !hanoiing)

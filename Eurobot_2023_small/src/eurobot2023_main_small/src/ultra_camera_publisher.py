@@ -41,7 +41,7 @@ def publisher():
 if __name__=="__main__":
     try:
         publisher()
-        # listener()
+        listener()
 
     except rospy.ROSInterruptException:
         pass

@@ -87,7 +87,11 @@ def startPos_callback(msg):
 
 def camera_callback(msg):
     global cameraPos
-    cameraPos[0], cameraPos[1] = msg.x*1000, msg.y*1000
+    if msg.z==-1:
+            cameraPos=[-1,-1]
+    # else if msg.z==-1:
+    else:
+        cameraPos[0], cameraPos[1] = msg.x*1000, msg.y*1000
     print(cameraPos)
 
 def robotPublish(color):
