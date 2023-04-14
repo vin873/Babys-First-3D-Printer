@@ -72,7 +72,7 @@ int lastCakeColor = -1;
 int cherryNum = 0;
 int cherryDelay = 3.5;
 int who_basket = -1;
-int now_release = -1;
+int home_num = -1;
 int now_Mission = CAKE;
 int now_Camera_Mode = NO_CAM;
 int now_Status = SETUP;
@@ -122,6 +122,7 @@ std_msgs::Int32MultiArray got;
 std_msgs::Bool finish_mission;
 std_msgs::String missionStr;
 
+geometry_msgs::PoseStamped somewhere;
 geometry_msgs::PoseStamped cake_picked[6];
 geometry_msgs::PoseStamped steal_picked;
 geometry_msgs::PoseStamped eat_picked[2];
@@ -200,39 +201,45 @@ public:
 
     void nav_callback(const std_msgs::Bool::ConstPtr &msg)
     {
-        moving = false;
-        if (msg->data)
+        if (moving)
         {
-            ROS_INFO("Arrived!");
-            arrived = true;
-        }
-        else
-        {
-            route_failed = true;
-            ROS_ERROR("Failed to reach goal!");
+            moving = false;
+            if (msg->data)
+            {
+                ROS_INFO("Arrived!");
+                arrived = true;
+            }
+            else
+            {
+                route_failed = true;
+                ROS_ERROR("Failed to reach goal!");
+            }
         }
     }
 
     void done_fullness_callback(const std_msgs::Int16MultiArray::ConstPtr &msg)
     {
-        if (msg->data.at(0) == 1)
+        if (doing)
         {
-            doing = false;
-            mission_success = true;
-            ROS_INFO("Mission finished!");
-        }
-        else if (msg->data.at(0) == 2)
-        {
-            hanoiing = false;
-        }
-        else
-        {
-            doing = false;
-            ROS_ERROR("Mission failed!");
-        }
-        for (int i = 1;i < 5;i++)
-        {
-            fullness[i-1] = msg->data.at(i);
+            if (msg->data.at(0) == 1)
+            {
+                doing = false;
+                mission_success = true;
+                ROS_INFO("Mission finished!");
+                for (int i = 1;i < 5;i++)
+                {
+                    fullness[i-1] = msg->data.at(i);
+                }
+            }
+            else if (msg->data.at(0) == 2)
+            {
+                hanoiing = false;
+            }
+            else
+            {
+                doing = false;
+                ROS_ERROR("Mission failed!");
+            }
         }
     }
 
@@ -352,12 +359,13 @@ int main(int argc, char **argv)
                     
                     got.data = {0, 0, 0, 0};
 
+                    mainClass.poseStamped_set(0, somewhere, 2.775, 1.775, 0, 1);
                     mainClass.poseStamped_set(0, basket_point[0], 0.245, 0.225, 0, 1);
                     mainClass.poseStamped_set(0, basket_point[1], 0.225, 1.775, 0, 1);
-                    mainClass.poseStamped_set(0, home[0][0], 1.125, 1.800, 0, 1);
-                    mainClass.poseStamped_set(0, home[0][1], 1.125, 0.200, 0, 1);
-                    mainClass.poseStamped_set(0, home[1][0], 1.125, 1.475, 0, 1);
-                    mainClass.poseStamped_set(0, home[1][1], 1.125, 0.525, 0, 1);
+                    mainClass.poseStamped_set(0, home[0][0], 1.400, 1.550, 0, 1);
+                    mainClass.poseStamped_set(0, home[0][1], 0.850, 1.550, 0, 1);
+                    mainClass.poseStamped_set(0, home[1][0], 1.400, 0.450, 0, 1);
+                    mainClass.poseStamped_set(0, home[1][1], 0.850, 0.450, 0, 1);
                 }
                 printOnce = true;
 
@@ -490,7 +498,6 @@ int main(int argc, char **argv)
                                         if (cakeNum % 2 == 0)
                                         {
                                             missionStr.data = id[cakeNum];
-                                            missionStr.data += id[cakeNum+1];
                                             if (missionStr.data.at(0) == 'b')
                                             {
                                                 lastCakeColor = 0;
@@ -503,8 +510,12 @@ int main(int argc, char **argv)
                                             {
                                                 lastCakeColor = 2;
                                             }
-                                            mainClass._mission.publish(missionStr);
-                                            ROS_INFO("Mission [%s] published!", missionStr.data.c_str());
+                                            if (id[cakeNum+1] != '!')
+                                            {
+                                                missionStr.data += id[cakeNum+1];
+                                                mainClass._mission.publish(missionStr);
+                                                ROS_INFO("Mission [%s] published!", missionStr.data.c_str());
+                                            }
                                         }
 
                                         mainClass._where2go.publish(cake_picked[cakeNum]);
@@ -596,6 +607,7 @@ int main(int argc, char **argv)
                                 std_msgs::Int32 camColor;
                                 camColor.data = lastCakeColor;
                                 mainClass._cam_which_color.publish(camColor);
+                                ROS_WARN("Using camera !!");
                                 cam_pub_once = true;
                             }
                             eurobot2023_main::eat esrv;
@@ -943,8 +955,6 @@ int main(int argc, char **argv)
                     {
                         if (release.data == 0 && !somewhere_once)
                         {
-                            geometry_msgs::PoseStamped somewhere;
-                            mainClass.poseStamped_set(0, somewhere, 2.775, 1.775, 0, 1);
                             mainClass._where2go.publish(somewhere);
                             ROS_INFO("Heading over to x:[%.3f] y:[%.3f]", somewhere.pose.position.x, somewhere.pose.position.y);
                             somewhere_once = true;
@@ -958,6 +968,7 @@ int main(int argc, char **argv)
                     {
                         if (release.data == 0 || release.data == robot+1)
                         {
+                            home_num = 0;
                             release.data = robot+1;
                             mainClass._release.publish(release);
                             eurobot2023_main::release rsrv;
@@ -979,6 +990,7 @@ int main(int argc, char **argv)
                         }
                         else
                         {
+                            home_num = 1;
                             eurobot2023_main::release rsrv;
                             rsrv.request.num = 1;
                             if (mainClass._release_client.call(rsrv))
@@ -1122,8 +1134,8 @@ int main(int argc, char **argv)
                     {
                         if (!arrived)
                         {
-                            mainClass._where2go.publish(home[robot][side]);
-                            ROS_INFO("Heading over to x:[%.3f] y:[%.3f]", home[robot][side].pose.position.x, home[robot][side].pose.position.y);
+                            mainClass._where2go.publish(home[side][home_num]);
+                            ROS_INFO("Heading over to x:[%.3f] y:[%.3f]", home[side][home_num].pose.position.x, home[side][home_num].pose.position.y);
                             moving = true;
                         }
                         else

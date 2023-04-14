@@ -461,6 +461,8 @@ def publisher():
                             robotPose.poses[2*pos+1].position.x = -777
                             camtAng = (np.rad2deg(np.arctan2(picked[robotNum][pos][1] - preposition[1]*1000, picked[robotNum][pos][0] - preposition[0]*1000)) + 360 - camAng) % 360
                             quat = euler2quaternion(0, 0, camtAng*math.pi/180)
+                            robotPose.header.frame_id = robotPose.header.frame_id[:-1]
+                            robotPose.header.frame_id += '!'
                             robotPose.poses[2*pos].orientation.x = quat.x
                             robotPose.poses[2*pos].orientation.y = quat.y
                             robotPose.poses[2*pos].orientation.z = quat.z
@@ -471,7 +473,7 @@ def publisher():
             position = [-1, -1]
             color = -1
             robotPublish(robotNum, color, pos)
-        # print("picked", picked[robotNum])
+        print("picked", picked[robotNum])
         # print(robotPose.header.frame_id)
         # print(outAngle[robotNum])
         # for i in range(6): 

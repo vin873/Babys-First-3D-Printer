@@ -92,7 +92,7 @@ def camera_callback(msg):
     # else if msg.z==-1:
     else:
         cameraPos[0], cameraPos[1] = msg.x*1000, msg.y*1000
-    print(cameraPos)
+    # print(cameraPos)
 
 def robotPublish(color):
     global robotPose, tempFull, cameraPos
