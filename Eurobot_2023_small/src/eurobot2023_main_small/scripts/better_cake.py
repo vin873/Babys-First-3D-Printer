@@ -5,6 +5,7 @@ from std_msgs.msg import Bool
 from std_msgs.msg import Int16MultiArray
 from std_msgs.msg import Int32MultiArray
 from geometry_msgs.msg import Pose
+from geometry_msgs.msg import Point
 from geometry_msgs.msg import PoseWithCovarianceStamped
 from nav_msgs.msg import Odometry
 from geometry_msgs.msg import PoseArray
@@ -38,6 +39,7 @@ got = [[0, 0, 0], [0, 0, 0]]  # brown, yellow, pink
 tempGot = [[0, 0, 0], [0, 0, 0]]
 fullness = [[0, 0, 0, 0], [0, 0, 0, 0]]
 tempFull = [[0, 0, 0, 0], [0, 0, 0, 0]]
+used_changed = -1
 currMin = [99999, 99999]
 minAngle = 360
 headAng = -45
@@ -55,6 +57,8 @@ quaternion = Quaternion()
 robotPose = PoseArray()
 
 def handle_cake(req):
+    if (req.num):
+        allCakes[math.floor(used_changed/4)][int(used_changed)%4] = [-1, -1]
     publisher()
     return cakeResponse(robotPose)
 
@@ -82,8 +86,8 @@ def enemiesPos2_callback(msg):
 
 def adjust_callback(msg):
     global adjustedNum, allCakes
-    allCakes[math.floor(msg.position.z/4)][int(msg.position.z)%4] = [msg.position.x * 1000, msg.position.y * 1000]
-    adjustedNum.append(msg.position.z)
+    allCakes[math.floor(msg.z/4)][int(msg.z)%4] = [msg.x * 1000, msg.y * 1000]
+    adjustedNum.append(msg.z)
 
 def got_callback(msg):
     global got
@@ -341,6 +345,11 @@ def where2go(pos, num):
             if len(picked[num]) < 3:
                 picked[num].append([-1, -1])
 
+    for b in range(3):
+        for c in range(2-b):
+            if picked[num][b] == picked[num][b+1+c]:
+                picked[num][b] = [-1, -1]
+
     if picked[num]:
         anglePos = pos
         tempAng = list(absAng)
@@ -374,7 +383,7 @@ def listener():
     side = rospy.get_param('side')
     robotNum = rospy.get_param('robot')
     run_mode = rospy.get_param('run_mode')
-    rospy.Subscriber('adjustCake', Pose, adjust_callback)
+    rospy.Subscriber('adjustCake', Point, adjust_callback)
     rospy.Subscriber('gotcake'+str(robotNum), Int32MultiArray, got_callback)
     rospy.Subscriber('donefullness'+str(robotNum), Int16MultiArray, full_callback)
     rospy.Service('cake'+str(robotNum), cake, handle_cake)
@@ -392,7 +401,7 @@ def listener():
     rospy.spin()
 
 def publisher():
-    global quaternion, enemies, startPos, currMin, picked, used, robotNum, robotPose, tempFull, minAngle, tempAllCakes, outAngle, position, quaternion, tempGot, preposition
+    global quaternion, enemies, startPos, currMin, picked, used, robotNum, robotPose, tempFull, minAngle, tempAllCakes, outAngle, position, quaternion, tempGot, preposition, used_changed
     color = -1
 
     picked = [[[-1, -1],  [-1, -1],  [-1, -1]], [[-1, -1],  [-1, -1],  [-1, -1]]]
@@ -458,9 +467,12 @@ def publisher():
                     count += 1
                     for i in range(3):
                         if picked[robotNum][pos] in allCakes[i] and 4*i+allCakes[i].index(picked[robotNum][pos]) in adjustedNum:
+                            used_changed = 4 * i + allCakes[i].index(picked[robotNum][pos])
                             robotPose.poses[2*pos+1].position.x = -777
                             camtAng = (np.rad2deg(np.arctan2(picked[robotNum][pos][1] - preposition[1]*1000, picked[robotNum][pos][0] - preposition[0]*1000)) + 360 - camAng) % 360
                             quat = euler2quaternion(0, 0, camtAng*math.pi/180)
+                            robotPose.header.frame_id = robotPose.header.frame_id[:-1]
+                            robotPose.header.frame_id += '!'
                             robotPose.poses[2*pos].orientation.x = quat.x
                             robotPose.poses[2*pos].orientation.y = quat.y
                             robotPose.poses[2*pos].orientation.z = quat.z
@@ -471,7 +483,7 @@ def publisher():
             position = [-1, -1]
             color = -1
             robotPublish(robotNum, color, pos)
-        # print("picked", picked[robotNum])
+        print("picked", picked[robotNum])
         # print(robotPose.header.frame_id)
         # print(outAngle[robotNum])
         # for i in range(6): 

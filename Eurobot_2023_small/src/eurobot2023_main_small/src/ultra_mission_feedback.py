@@ -27,19 +27,24 @@ def mission_callback(msg):
         arr[0] = 1
     elif msg.data[0] == 'c':
         arr[0] = 1
-        # publisher(1)
+        publisher(1)
     elif msg.data[0] == 'o':
         # arr[int(msg.data[1])+1] = 0
         arr[0] = 1
-        # publisher(1)
+        publisher(1)
     elif msg.data[0] == 's':
         arr[0] = 1
-        arr2[int(msg.data[1])] = 0
+        if msg.data[1] == '4':
+            arr2[0] = 0
+        elif msg.data[1] == '5':
+            arr2[2] = 0
+        else:
+            arr2[int(msg.data[1])] = 0
         publisher2()
-        # publisher(3)
+        publisher(3)
     elif msg.data[0] == 'v':
         arr[0] = 1
-        # publisher(1)
+        publisher(1)
     elif msg.data[0] == 'u':
         arr[0] = 1
         publisher(5)
@@ -69,6 +74,7 @@ def publisher(time):
     global arr
     pub = rospy.Publisher('/donefullness'+str(robotNum), Int16MultiArray, queue_size=1000)
     done.data = arr
+    print("mission callback from ultra_mission_feedback")
     rospy.sleep(time)
     pub.publish(done)
     

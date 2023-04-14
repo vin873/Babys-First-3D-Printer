@@ -15,12 +15,24 @@ allCakes = [browns, yellows, pinks]
 def cam_callback(msg):
     pub2 = rospy.Publisher('/onRobot/relative_where', Point, queue_size=1000)
     caker = Point()
-    changedCake = [0, 0.6]
+    changedCake = [0.5, 0]
     caker.x, caker.y = changedCake[0], changedCake[1]
-    caker.z = 3
-    print(caker)
+    caker.z = -1
+    # print(caker)
     rospy.sleep(0.5)
     pub2.publish(caker)
+
+    rospy.sleep(2)
+    caker.z = -2
+    rospy.sleep(0.5)
+    pub2.publish(caker)
+
+    rospy.sleep(0.5)
+    caker.z = 3
+    # print(caker)
+    rospy.sleep(0.3)
+    pub2.publish(caker)
+    rospy.sleep(10)
 
 def listener():
     rospy.Subscriber('cam_which_color', Int32, cam_callback)
@@ -28,13 +40,14 @@ def listener():
 
 def publisher():
     rospy.init_node("ultra_camera_publisher")
-    pub1 = rospy.Publisher('/adjustCake', Pose, queue_size=1000)
+    pub1 = rospy.Publisher('/adjustCake', Point, queue_size=1000)
 
-    caker = Pose()
-    changeNum = 6
-    changedCake = [2.300, 0.650]
-    caker.position.x, caker.position.y = changedCake[0], changedCake[1]
-    caker.position.z = changeNum
+    caker = Point()
+    changeNum = 2
+    # changedCake = [-0.001, -0.001]
+    changedCake = [1.875, 0.925]
+    caker.x, caker.y = changedCake[0], changedCake[1]
+    caker.z = changeNum
     rospy.sleep(0.3)
     pub1.publish(caker)
 
