@@ -3,7 +3,7 @@
 import rospy
 from std_msgs.msg import Bool
 from std_msgs.msg import Float64
-from std_msgs.msg import Int32
+from std_msgs.msg import Int16MultiArray
 from geometry_msgs.msg import Point
 from geometry_msgs.msg import Pose
 from geometry_msgs.msg import PoseStamped
@@ -34,6 +34,7 @@ rotateCount=0
 
 robotNum = 0
 side = 0
+camMode = 0
 run_mode = ''
 position = [-1, -1]
 preposition = [-1, -1]
@@ -90,10 +91,10 @@ def startPos_callback(msg):
     absAng = quaternion2euler(msg.pose.pose.orientation.x, msg.pose.pose.orientation.y, msg.pose.pose.orientation.z, msg.pose.pose.orientation.w) - headAng
 
 def camera_callback(msg):
-    global cameraPos, startPos, absAng, headAng, rotateCount, mode
+    global cameraPos, startPos, absAng, headAng, rotateCount, camMode
     rotateCount=0
-    mode=msg.z
-    if msg.z != -1:
+    camMode=msg.z
+    if int(msg.z) != -1:
         cameraPos[0], cameraPos[1] = msg.x*1000, msg.y*1000
     else:
         cameraPos=[-1,-1]
@@ -104,19 +105,24 @@ def finish_callback(msg):
     cal_or_not=True
     rotateCount+=1
 
+def full_callback(msg):
+    global fullness
+    for i in range(4):
+        fullness[i] = msg.data[i+1]
+
 def robotPublish(color):
     global robotPose, tempFull, cameraPos
     c = '?'
-    if color == 0:
+    if color == 1:
         c = 'b'
-    elif color == 1:
-        c = 'y'
     elif color == 2:
+        c = 'y'
+    elif color == 3:
         c = 'p'
 
     robotPose.header.frame_id = c
     for full in tempFull:
-        if full == 1:
+        if full == 999:
             robotPose.header.frame_id += str(tempFull.index(full))
     robotPose.header.stamp = rospy.Time.now()
     
@@ -235,7 +241,7 @@ def where2go(pos):
             minAngle = i
             minAngleNum = tAngles.index(i)
     outAngle = minAngle + tempAng + 2*headAng
-    tempFull[minAngleNum] = 1
+    tempFull[minAngleNum] = 999
 
     quaternion = euler2quaternion(0, 0, outAngle * math.pi / 180)
     # robotPublish(robotNum)
@@ -247,6 +253,7 @@ def listener():
     run_mode = rospy.get_param('run_mode')
     rospy.Subscriber("/onRobot/relative_where", Point, camera_callback)
     rospy.Subscriber("/robot"+str(robotNum+1)+"/is_finish", Bool, finish_callback)
+    rospy.Subscriber('donefullness'+str(robotNum), Int16MultiArray, full_callback)
     rospy.Service('eat'+str(robotNum), eat, handle_eat)
     if run_mode == 'run':
         rospy.Subscriber("/robot" + str(robotNum+1) +"/ekf_pose", PoseWithCovarianceStamped, startPos_callback)
@@ -255,7 +262,7 @@ def listener():
     rospy.spin()
 
 def publisher(color):
-    global cal_or_not,rotateCount, mode, quaternion, startPos, robotNum, robotPose, tempFull, minAngle, outAngle, position, quaternion, preposition, cameraPos
+    global cal_or_not,rotateCount, camMode, quaternion, startPos, robotNum, robotPose, tempFull, minAngle, outAngle, position, quaternion, preposition, cameraPos
 
     tempFull = [0, 0, 0, 0]
     minAngle = 360
@@ -276,7 +283,7 @@ def publisher(color):
             robotPublish(color)
         cameraPos = [-1, -1]
     else:
-        if startPos != [-1, -1]:
+        if startPos != [-1, -1] and camMode == -1:
             robotPose.poses=[]
             robotPose.header.frame_id = ''
             robotRotate()

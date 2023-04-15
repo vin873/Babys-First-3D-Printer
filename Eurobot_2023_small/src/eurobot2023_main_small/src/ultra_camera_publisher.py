@@ -43,9 +43,9 @@ def publisher():
     pub1 = rospy.Publisher('/adjustCake', Point, queue_size=1000)
 
     caker = Point()
-    changeNum = 2
+    changeNum = 10
     # changedCake = [-0.001, -0.001]
-    changedCake = [1.875, 0.925]
+    changedCake = [2.650, 0.600]
     caker.x, caker.y = changedCake[0], changedCake[1]
     caker.z = changeNum
     rospy.sleep(0.3)
@@ -54,7 +54,7 @@ def publisher():
 if __name__=="__main__":
     try:
         publisher()
-        listener()
+        # listener()
 
     except rospy.ROSInterruptException:
         pass

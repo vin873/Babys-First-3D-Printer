@@ -121,6 +121,7 @@ string id_frame = "path";
 string dock_id_frame = "dock_mov";
 string dockr_id_frame = "dock_rot";
 
+std_msgs::Int32 camColor;
 std_msgs::Int32 release;
 std_msgs::Int32 basket_robot;
 std_msgs::Int32MultiArray got;
@@ -240,15 +241,16 @@ public:
                     fullness[i-1] = msg->data.at(i);
                 }
             }
-            else if (msg->data.at(0) == 2)
-            {
-                hanoiing = false;
-            }
             else
             {
                 doing = false;
                 ROS_ERROR("Mission failed!");
             }
+        }
+        if (msg->data.at(0) == 2)
+        {
+            hanoiing = false;
+             ROS_WARN("Finished hanoiing!");
         }
     }
 
@@ -520,15 +522,15 @@ int main(int argc, char **argv)
                                             missionStr.data = id[cakeNum];
                                             if (missionStr.data.at(0) == 'b')
                                             {
-                                                lastCakeColor = 0;
+                                                lastCakeColor = 1;
                                             }
                                             else if (missionStr.data.at(0) == 'y')
                                             {
-                                                lastCakeColor = 1;
+                                                lastCakeColor = 2;
                                             }
                                             else if (missionStr.data.at(0) == 'p')
                                             {
-                                                lastCakeColor = 2;
+                                                lastCakeColor = 3;
                                             }
                                             if (id[cakeNum+1] != '!')
                                             {
@@ -549,17 +551,17 @@ int main(int argc, char **argv)
                                         {
                                             if (missionStr.data.at(0) == 'b')
                                             {
-                                                lastCakeColor = 0;
+                                                lastCakeColor = 1;
                                                 got.data.at(0) = 1;
                                             }
                                             else if (missionStr.data.at(0) == 'y')
                                             {
-                                                lastCakeColor = 1;
+                                                lastCakeColor = 2;
                                                 got.data.at(1) = 1;
                                             }
                                             else if (missionStr.data.at(0) == 'p')
                                             {
-                                                lastCakeColor = 2;
+                                                lastCakeColor = 3;
                                                 got.data.at(2) = 1;
                                             }
                                             mainClass._got_cake_color.publish(got);
@@ -624,7 +626,6 @@ int main(int argc, char **argv)
                         {
                             if (!cam_pub_once)
                             {
-                                std_msgs::Int32 camColor;
                                 camColor.data = lastCakeColor;
                                 mainClass._cam_which_color.publish(camColor);
                                 ROS_WARN("Using camera !!");
@@ -636,6 +637,7 @@ int main(int argc, char **argv)
                                 if (esrv.response.picked.header.frame_id != "")
                                 {
                                     id = esrv.response.picked.header.frame_id;
+                                    int dkmode = 0;
                                     if (id[0] == 'b')
                                     {
                                         got.data.at(0) = 1;
@@ -650,12 +652,13 @@ int main(int argc, char **argv)
                                     }
                                     else if (id[0] == 'x')
                                     {
+                                        dkmode = 2;
                                         is_rotate = true;
                                     }
                                     mainClass._got_cake_color.publish(got);
                                     for (int i = 0;i < 2;i++)
                                     {
-                                        mainClass.poseStamped_set(0, cake_picked[i], esrv.response.picked.poses[i].position.x, esrv.response.picked.poses[i].position.y, esrv.response.picked.poses[i].orientation.z, esrv.response.picked.poses[i].orientation.w);
+                                        mainClass.poseStamped_set(dkmode, cake_picked[i], esrv.response.picked.poses[i].position.x, esrv.response.picked.poses[i].position.y, esrv.response.picked.poses[i].orientation.z, esrv.response.picked.poses[i].orientation.w);
                                     }
                                     got_cake_picked = true;
                                     cakeTime = ros::Time::now();
@@ -674,7 +677,7 @@ int main(int argc, char **argv)
                                 is_rotate = false;
                                 got_cake_picked = false;
                                 cakeNum = 0;
-                                cam_pub_once = false;
+                                // cam_pub_once = false;
                                 moving = false;
                             }
                             else if (!moving && !doing)
@@ -684,11 +687,13 @@ int main(int argc, char **argv)
                                     if (!is_rotate)
                                     {
                                         now_Camera_Mode = NO_CAM;
+                                        camColor.data = 0;
+                                        mainClass._cam_which_color.publish(camColor);
+                                        cam_pub_once = false;
                                     }
                                     got_cake_picked = false;
                                     cakeNum = 0;
                                     eatornot = false;
-                                    cam_pub_once = false;
                                 }
                                 else
                                 {
@@ -704,11 +709,13 @@ int main(int argc, char **argv)
                                             if (!is_rotate)
                                             {
                                                 now_Camera_Mode = NO_CAM;
+                                                camColor.data = 0;
+                                                mainClass._cam_which_color.publish(camColor);
+                                                cam_pub_once = false;
                                             }
                                             got_cake_picked = false;
                                             cakeNum = 0;
                                             eatornot = false;
-                                            cam_pub_once = false;
                                         }
                                     }
                                     else if (!arrived && !mission_success)
@@ -758,6 +765,8 @@ int main(int argc, char **argv)
                                             {
                                                 c_or_d = 1;
                                                 now_Camera_Mode = NO_CAM;
+                                                camColor.data = 0;
+                                                mainClass._cam_which_color.publish(camColor);
                                                 got_cake_picked = false;
                                                 cakeNum = 0;
                                                 eatornot = false;
@@ -777,11 +786,13 @@ int main(int argc, char **argv)
                                             if (!is_rotate)
                                             {
                                                 now_Camera_Mode = NO_CAM;
+                                                camColor.data = 0;
+                                                mainClass._cam_which_color.publish(camColor);
+                                                cam_pub_once = false;
                                             }
                                             got_cake_picked = false;
                                             cakeNum = 0;
                                             eatornot = false;
-                                            cam_pub_once = false;
                                         }
                                     }
                                 }
@@ -800,6 +811,8 @@ int main(int argc, char **argv)
                                 else
                                 {
                                     now_Camera_Mode = NO_CAM;
+                                    camColor.data = 0;
+                                    mainClass._cam_which_color.publish(camColor);
                                     got_cake_picked = false;
                                     cakeNum = 0;
                                     eatornot = false;
@@ -1172,14 +1185,14 @@ int main(int argc, char **argv)
                     else if (!got_steal_cake)
                     {
                         now_Mission = HOME;
-                        if (mainClass._steal_client.call(ssrv))
-                        {
-                            if (srv.response.picked.header.frame_id != "")
-                            {
-                                mainClass.poseStamped_set(0, steal_picked, ssrv.response.picked.pose.position.x, ssrv.response.picked.pose.position.y, ssrv.response.picked.pose.orientation.z, ssrv.response.picked.pose.orientation.w);
-                                got_steal_cake=true;
-                            }
-                        }
+                        // if (mainClass._steal_client.call(ssrv))
+                        // {
+                        //     if (srv.response.picked.header.frame_id != "")
+                        //     {
+                        //         mainClass.poseStamped_set(0, steal_picked, ssrv.response.picked.pose.position.x, ssrv.response.picked.pose.position.y, ssrv.response.picked.pose.orientation.z, ssrv.response.picked.pose.orientation.w);
+                        //         got_steal_cake=true;
+                        //     }
+                        // }
                     }
                     else if (got_steal_cake && !hanoiing)
                     {
@@ -1202,6 +1215,10 @@ int main(int argc, char **argv)
                     {
                         if (!arrived)
                         {
+                            if (home_num == -1)
+                            {
+                                home_num = robot;
+                            }
                             mainClass._where2go.publish(home[side][home_num]);
                             ROS_INFO("Heading over to x:[%.3f] y:[%.3f]", home[side][home_num].pose.position.x, home[side][home_num].pose.position.y);
                             moving = true;

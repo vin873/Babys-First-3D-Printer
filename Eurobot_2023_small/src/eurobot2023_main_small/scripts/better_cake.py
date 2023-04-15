@@ -97,7 +97,8 @@ def got_callback(msg):
 def full_callback(msg):
     global fullness
     for i in range(4):
-        fullness[robotNum][i] = msg.data[i+1]
+        if msg.data[i+1]:
+            fullness[robotNum][i] = 999
 
 def tPoint(mode, pos, target):
     # print(pos ,target)
@@ -348,7 +349,13 @@ def where2go(pos, num):
     for b in range(3):
         for c in range(2-b):
             if picked[num][b] == picked[num][b+1+c]:
-                picked[num][b] = [-1, -1]
+                picked[num][b+1+c] = [-1, -1]
+
+    for b in range(2):
+        if picked[num][b] == [-1, -1]:
+            picked[num][b], picked[num][b+1] = picked[num][b+1], picked[num][b]
+    if picked[num][0] == [-1, -1]:
+        picked[num][0], picked[num][1] = picked[num][1], picked[num][0]
 
     if picked[num]:
         anglePos = pos
@@ -358,12 +365,10 @@ def where2go(pos, num):
             minAngle = 360
             minAngleNum = -1
             tAngle = (np.rad2deg(np.arctan2(picked[num][j][1] - anglePos[1], picked[num][j][0] - anglePos[0])) - tempAng[num] + 360) % 360
-            tAngles = [360, 360, 360, 360]
+            tAngles = [999, 999, 999, 999]
             for i in range(4):
                 if tempFull[num][i] == 0:
                     tAngles[i] = (tAngle - i * 90 + 360 - headAng) % 360
-                    # if tAngles[i] > 180:
-                    #     tAngles[i] -= 360
             for i in tAngles:
                 if abs(i) < abs(minAngle):
                     minAngle = i
@@ -373,6 +378,7 @@ def where2go(pos, num):
             tempAng[num] = outAngle[num][j] - headAng
             tempFull[num][minAngleNum] = j+1
             anglePos = picked[num][j]
+        print("tF", num, tempFull[num])
     # print(outAngle[robotNum][0], absAng[robotNum])
 
     currMin[num] = tempMin
@@ -468,15 +474,15 @@ def publisher():
                     for i in range(3):
                         if picked[robotNum][pos] in allCakes[i] and 4*i+allCakes[i].index(picked[robotNum][pos]) in adjustedNum:
                             used_changed = 4 * i + allCakes[i].index(picked[robotNum][pos])
-                            robotPose.poses[2*pos+1].position.x = -777
+                            robotPose.poses[2*(count-1)+1].position.x = -777
                             camtAng = (np.rad2deg(np.arctan2(picked[robotNum][pos][1] - preposition[1]*1000, picked[robotNum][pos][0] - preposition[0]*1000)) + 360 - camAng) % 360
                             quat = euler2quaternion(0, 0, camtAng*math.pi/180)
                             robotPose.header.frame_id = robotPose.header.frame_id[:-1]
                             robotPose.header.frame_id += '!'
-                            robotPose.poses[2*pos].orientation.x = quat.x
-                            robotPose.poses[2*pos].orientation.y = quat.y
-                            robotPose.poses[2*pos].orientation.z = quat.z
-                            robotPose.poses[2*pos].orientation.w = quat.w
+                            robotPose.poses[2*(count-1)].orientation.x = quat.x
+                            robotPose.poses[2*(count-1)].orientation.y = quat.y
+                            robotPose.poses[2*(count-1)].orientation.z = quat.z
+                            robotPose.poses[2*(count-1)].orientation.w = quat.w
                             flag = 1
                             break
         for i in range(3-count):
@@ -484,7 +490,8 @@ def publisher():
             color = -1
             robotPublish(robotNum, color, pos)
         print("picked", picked[robotNum])
-        # print(robotPose.header.frame_id)
+        print(robotPose.header.frame_id)
+        print(fullness[robotNum])
         # print(outAngle[robotNum])
         # for i in range(6): 
         #     print(i, " : [", robotPose.poses[i].position.x, robotPose.poses[i].position.y, quaternion2euler(robotPose.poses[i].orientation.x, robotPose.poses[i].orientation.y, robotPose.poses[i].orientation.z, robotPose.poses[i].orientation.w), "]")

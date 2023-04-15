@@ -27,11 +27,11 @@ def mission_callback(msg):
         arr[0] = 1
     elif msg.data[0] == 'c':
         arr[0] = 1
-        publisher(1)
+        # publisher(1)
     elif msg.data[0] == 'o':
         # arr[int(msg.data[1])+1] = 0
         arr[0] = 1
-        publisher(1)
+        # publisher(1)
     elif msg.data[0] == 's':
         arr[0] = 1
         if msg.data[1] == '4':
@@ -41,10 +41,10 @@ def mission_callback(msg):
         else:
             arr2[int(msg.data[1])] = 0
         publisher2()
-        publisher(3)
+        # publisher(3)
     elif msg.data[0] == 'v':
         arr[0] = 1
-        publisher(1)
+        # publisher(1)
     elif msg.data[0] == 'u':
         arr[0] = 1
         publisher(5)
@@ -62,12 +62,18 @@ def startPos2_callback(msg):
     startPos[1][0] = msg.pose.pose.position.x * 1000
     startPos[1][1] = msg.pose.pose.position.y * 1000
 
+def fullness_callback(msg):
+    global arr
+    for i in range(4):
+        arr[i+1] = msg.data[i+1]
+
 def listener():
     global robotNum
     rospy.init_node("ultra_mission_feedback")
     robotNum = rospy.get_param('robot')
     rospy.Subscriber("/cherryExistence", Int32MultiArray, cherryE_callback)
     rospy.Subscriber("/mission"+str(robotNum), String, mission_callback)
+    rospy.Subscriber("/donefullness"+str(robotNum), Int16MultiArray, fullness_callback)
     rospy.spin()
 
 def publisher(time):
