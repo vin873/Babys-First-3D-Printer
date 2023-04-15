@@ -87,3 +87,7 @@ https://hackmd.io/@925/S1lQD_ljq/%2Fs%2Fryg2eQv4Q1Gplup81jfMRw%3Fboth%233-1-ROS-
     dmesg | grep tty
     sudo chmod 777 /dev/ttyACM0
     rosrun rosserial_python serial_node.py _baud:=115200 _port:=/dev/ttyACM0
+    
+## 9. Eurobot 2023 main
+
+https://github.com/DIT-ROBOTICS/Eurobot2023-main
