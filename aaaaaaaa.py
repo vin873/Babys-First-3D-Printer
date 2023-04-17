@@ -65,6 +65,12 @@ def publisher():
                     missionStr.data = 'o' + str(i)
                     rospy.sleep(0.3)
                     pub.publish(missionStr)
+            
+            elif missionStr.data == 'yump':
+                for i in range(4):
+                    missionStr.data = 'c' + str(i)
+                    rospy.sleep(0.3)
+                    pub.publish(missionStr)
 
             elif (missionStr.data[0] == 'b' or missionStr.data[0] == 'y' or missionStr.data[0] == 'p') and len(missionStr.data) == 6:
                 ms = missionStr.data
