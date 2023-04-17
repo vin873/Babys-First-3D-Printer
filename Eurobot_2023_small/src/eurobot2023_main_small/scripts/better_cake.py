@@ -57,6 +57,7 @@ quaternion = Quaternion()
 robotPose = PoseArray()
 
 def handle_cake(req):
+    global allCakes
     if (req.num):
         allCakes[math.floor(used_changed/4)][int(used_changed)%4] = [-1, -1]
     publisher()
@@ -378,7 +379,7 @@ def where2go(pos, num):
             tempAng[num] = outAngle[num][j] - headAng
             tempFull[num][minAngleNum] = j+1
             anglePos = picked[num][j]
-        print("tF", num, tempFull[num])
+        # print("tF", num, tempFull[num])
     # print(outAngle[robotNum][0], absAng[robotNum])
 
     currMin[num] = tempMin
@@ -489,9 +490,9 @@ def publisher():
             position = [-1, -1]
             color = -1
             robotPublish(robotNum, color, pos)
-        print("picked", picked[robotNum])
-        print(robotPose.header.frame_id)
-        print(fullness[robotNum])
+        # print("picked", picked[robotNum])
+        # print(robotPose.header.frame_id)
+        # print(fullness[robotNum])
         # print(outAngle[robotNum])
         # for i in range(6): 
         #     print(i, " : [", robotPose.poses[i].position.x, robotPose.poses[i].position.y, quaternion2euler(robotPose.poses[i].orientation.x, robotPose.poses[i].orientation.y, robotPose.poses[i].orientation.z, robotPose.poses[i].orientation.w), "]")

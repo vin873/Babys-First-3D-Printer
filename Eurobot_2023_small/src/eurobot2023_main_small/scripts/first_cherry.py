@@ -38,7 +38,7 @@ def handle_cherry(req):
     return cherryResponse(robotPose)
 
 def startPos1_callback(msg):
-    global startPos, absAng
+    global startPos
     startPos[0][0] = msg.pose.pose.position.x * 1000
     startPos[0][1] = msg.pose.pose.position.y * 1000
 
@@ -99,6 +99,7 @@ def cherry_callback(msg):
         publisher()
 
 def cherryE_callback(msg):
+    global cherryE
     # print(cherry)
     for i in range(4):
         cherryE[i] = msg.data[i]
@@ -126,20 +127,17 @@ def closerEnemy(target):
     global enemies
     speed = 0.9  # enemy/our
     min = 99999
-    side = [-1, -1]
     for enemy in enemies:
         if enemy != [-1, -1]:
             for i in target:
                 if min > euclidean(enemy, i) / speed:
                     min = euclidean(enemy, i) / speed
-                    side = list(i)
     return min
 
 def where2suck(pos, num):
     global tempMin, tempSide, used, cherryE
     tempMin[num] = 99999
     tempChoice = [-1, -1]
-    enemyChoice = [-1, -1]
     tempSide[num] = [[-1, -1], [-1, -1]]
 
     for sides in range(6):
@@ -191,7 +189,7 @@ def listener():
 
 def publisher():
     # print(cherryE)
-    global robotPose, used, pickedSide
+    global robotPose, used, pickedSide, tempMin
     for robot in startPos:
         if robot != [-1, -1]:
             pickedSide[startPos.index(robot)] = where2suck(robot, startPos.index(robot))

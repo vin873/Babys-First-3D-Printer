@@ -29,11 +29,10 @@ outAngle = 0
 dockDis = 0.240
 cakeDis = 0.075
 cameraPos = [-1, -1]
-color=0
-rotateCount=0
+color = 0
+rotateCount = 0
 
 robotNum = 0
-side = 0
 camMode = 0
 run_mode = ''
 position = [-1, -1]
@@ -92,18 +91,18 @@ def startPos_callback(msg):
 
 def camera_callback(msg):
     global cameraPos, startPos, absAng, headAng, rotateCount, camMode
-    rotateCount=0
-    camMode=msg.z
+    rotateCount = 0
+    camMode = msg.z
     if int(msg.z) != -1:
         cameraPos[0], cameraPos[1] = msg.x*1000, msg.y*1000
     else:
-        cameraPos=[-1,-1]
+        cameraPos = [-1, -1]
     # print(cameraPos)
 
 def finish_callback(msg):
     global rotateCount, cal_or_not
-    cal_or_not=True
-    rotateCount+=1
+    cal_or_not = True
+    rotateCount += 1
 
 def full_callback(msg):
     global fullness
@@ -149,7 +148,7 @@ def robotPublish(color):
     # print("eat : ", robotPose)
 
 def robotRotate():
-    global robotPose, tempFull, cameraPos, startPos
+    global robotPose, tempFull, startPos
     robotPose.header.frame_id = 'x'
     
     pose = Pose()
@@ -223,8 +222,6 @@ def howLong(pos):
 def where2go(pos):
     global fullness, absAng, minAngle, outAngle, headAng, cameraPos, quaternion, tempFull
 
-    tempAng = 0
-    anglePos = list(pos)
     tempAng = absAng
     tempFull = list(fullness)
 
@@ -247,7 +244,7 @@ def where2go(pos):
     # robotPublish(robotNum)
 
 def listener():
-    global side, robotNum, run_mode
+    global robotNum, run_mode
     rospy.init_node("eat")
     robotNum = rospy.get_param('robot')
     run_mode = rospy.get_param('run_mode')
@@ -262,7 +259,7 @@ def listener():
     rospy.spin()
 
 def publisher(color):
-    global cal_or_not,rotateCount, camMode, quaternion, startPos, robotNum, robotPose, tempFull, minAngle, outAngle, position, quaternion, preposition, cameraPos
+    global cal_or_not, rotateCount, camMode, quaternion, startPos, robotNum, robotPose, tempFull, minAngle, outAngle, position, quaternion, preposition, cameraPos
 
     tempFull = [0, 0, 0, 0]
     minAngle = 360
