@@ -111,7 +111,7 @@ def tPoint(pos, target):
         return point
 
 def robotPublish(num, target):
-    global robotPose, tempFull, startPos, robotNum
+    global robotPose, startPos, robotNum
 
     robotPose.header.frame_id = target[2]
     robotPose.header.stamp = rospy.Time.now()

@@ -1,2 +1,3 @@
+int32 num
 ---
 geometry_msgs/PoseArray picked

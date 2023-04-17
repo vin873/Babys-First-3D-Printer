@@ -90,7 +90,9 @@ def listener():
     rospy.spin()
 
 def publisher(num):
-    global robotPose
+    global robotPose, ang
+
+    empty = -1
 
     for i in range(4):
         if fullness[i] == 0:
