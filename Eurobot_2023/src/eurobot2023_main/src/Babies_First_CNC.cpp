@@ -76,10 +76,13 @@ int cherryNum = 0;
 int cherryDelay = 3.5;
 int who_basket = -1;
 int home_num = -1;
-int now_Mission = CAKE;
+int now_Mission = STEAL;
 int now_Camera_Mode = NO_CAM;
 int now_Status = SETUP;
 int now_Mode = NORMAL;
+int doing_mode = CAKE;
+
+int cakeNumber[3] = {-1, -1, -1};
 
 double myPos_x;
 double myPos_y;
@@ -156,6 +159,7 @@ public:
     {
         nh.getParam("robot", robot);
         nh.getParam("side", side);
+        _cakeNum = nh.subscribe<std_msgs::Int32MultiArray>("cakeNum"+to_string(robot), 1000, &mainProgram::cakeNum_callback, this);
         _got_cake_color = nh.advertise<std_msgs::Int32MultiArray>("gotcake"+to_string(robot), 1000);
         _release = nh.advertise<std_msgs::Int32>("release"+to_string(robot), 1000);
         _another_release = nh.subscribe<std_msgs::Int32>("release"+to_string(!bool(robot)), 1000, &mainProgram::anothere_callback, this);
@@ -284,11 +288,47 @@ public:
         relative_point = msg->z;
     }
 
+    void cakeNum_callback(const std_msgs::Int32MultiArray::ConstPtr &msg)
+    {
+        for (int i = 0;i < 3;i++)
+        {
+            cakeNumber[i] = msg->data.at(i);
+            // cout << cakeNumber[i] << endl;
+        }
+    }
+
     void cake_callback(const geometry_msgs::Point::ConstPtr &msg)
     {
-        ROS_WARN("Cake update!");
-        got_cake_picked = false;
-        moving = false;
+        // ROS_WARN("Cake update!");
+        int num;
+        if (cakeNum % 2 == 1)
+        {
+            // num = (cakeNum-1)/2;
+        }
+        else
+        {
+            num = (cakeNum)/2;
+            if (got_cake_picked)
+            {
+                for (int i = num;i < 3;i++)
+                {
+                    // cout << msg->z << " " << cakeNumber[i] << endl;
+                    if (int(msg->z) == cakeNumber[i])
+                    {
+                        now_Camera_Mode = NO_CAM;
+                        got_cake_picked = false;
+                        eatornot = false;
+                        cam_pub_once = false;
+                        cakeNum = 0;
+                        moving = false;
+                        doing = false;
+                        arrived = false;
+                        mission_success = false;
+                        break;
+                    }
+                }
+            }
+        }
     }
 
     void cherry_callback(const std_msgs::Int32MultiArray::ConstPtr &msg)
@@ -298,6 +338,40 @@ public:
             cherryE[i] = msg->data.at(i);
         }
         ROS_WARN("Cherry update!");
+        int checkId;
+        if (cid == "4" || cid == "0")
+        {
+            checkId = 0;
+        }
+        else if (cid == "5" || cid == "2")
+        {
+            checkId = 2;
+        }
+        else if (cid == "1")
+        {
+            checkId = 1;
+        }
+        else if (cid == "3")
+        {
+            checkId = 3;
+        }
+        if (now_Mission == CHERRY && got_cherry_picked && cherryE[checkId] == 0)
+        {
+            got_cherry_picked = false;
+            moving = false;
+            doing = false;
+            arrived = false;
+            mission_success = false;
+            cherryNum = 0;
+        }
+    }
+
+    void plate_callback(const std_msgs::Int32MultiArray::ConstPtr &msg)
+    {
+        for (int i = 0;i < 5;i++)
+        {
+            plates[i] = msg->data.at(i);
+        }
     }
 
     void myPos_callback(const nav_msgs::Odometry::ConstPtr &msg)
@@ -319,13 +393,17 @@ public:
     ros::NodeHandle nh;
 
     // main
+    ros::Publisher _all_set_up = nh.advertise<std_msgs::Bool>("allSetUp", 1000);
     ros::Publisher _got_cake_color = nh.advertise<std_msgs::Int32MultiArray>("gotcake"+to_string(robot), 1000);
     ros::Publisher _ibasket = nh.advertise<std_msgs::Int32>("basketornot", 1000);
     ros::Publisher _release = nh.advertise<std_msgs::Int32>("release"+to_string(robot), 1000);
+    ros::Publisher _plates = nh.advertise<std_msgs::Int32MultiArray>("plates", 1000);
     ros::Publisher _ifinish = nh.advertise<std_msgs::Bool>("finishall", 1000);
+    ros::Subscriber _cakeNum = nh.subscribe<std_msgs::Int32MultiArray>("cakeNum"+to_string(robot), 1000, &mainProgram::cakeNum_callback, this);
     ros::Subscriber _got_what_color = nh.subscribe<std_msgs::Int32MultiArray>("gotcake"+to_string(robot), 1000, &mainProgram::what_color_cake_callback, this);
     ros::Subscriber _basketornot = nh.subscribe<std_msgs::Int32>("basketornot", 1000, &mainProgram::basket_callback, this);
     ros::Subscriber _another_release = nh.subscribe<std_msgs::Int32>("release"+to_string(!bool(robot)), 1000, &mainProgram::anothere_callback, this);
+    ros::Subscriber _plate_full = nh.subscribe<std_msgs::Int32MultiArray>("finishall", 1000, &mainProgram::plate_callback, this);
     ros::Subscriber _finishall = nh.subscribe<std_msgs::Bool>("finishall", 1000, &mainProgram::finishall_callback, this);
     ros::ServiceClient _cake_client = nh.serviceClient<eurobot2023_main::cake>("cake"+to_string(robot));
     ros::ServiceClient _cherry_client = nh.serviceClient<eurobot2023_main::cherry>("cherry"+to_string(robot));
@@ -394,6 +472,9 @@ int main(int argc, char **argv)
                     release.data = 0;
                     finish_mission.data = false;
                     
+                    std_msgs::Bool setup;
+                    setup.data = true;
+                    mainClass._all_set_up.publish(setup);
                     got.data = {0, 0, 0, 0};
 
                     mainClass.poseStamped_set(0, basket_point[0], 0.245, 0.225, 0, 1);
@@ -588,7 +669,6 @@ int main(int argc, char **argv)
                                                 lastCakeColor = 3;
                                                 got.data.at(2) = 1;
                                             }
-                                            mainClass._got_cake_color.publish(got);
                                             missionStr.data.at(0) = 'c';
                                             mainClass._mission.publish(missionStr);
                                             ROS_INFO("Mission [%s] published!", missionStr.data.c_str());
@@ -608,6 +688,7 @@ int main(int argc, char **argv)
                                         mission_success = false;
                                         if (cakeNum < 5)
                                         {
+                                            mainClass._got_cake_color.publish(got);
                                             cakeNum++;
                                         }
                                         else
@@ -664,6 +745,14 @@ int main(int argc, char **argv)
                             {
                                 c_or_d = 1;
                                 ROS_WARN("===== Failed to turn on camera! =====");
+                                if (doing_mode == STEAL)
+                                {
+                                    now_Mission = HOME;
+                                    mission_print = false;
+                                    camColor.data = 0;
+                                    mainClass._cam_which_color.publish(camColor);
+                                    break;
+                                }
                                 now_Camera_Mode = NO_CAM;
                                 camColor.data = 0;
                                 mainClass._cam_which_color.publish(camColor);
@@ -696,7 +785,6 @@ int main(int argc, char **argv)
                                         dockmode = 2;
                                         is_rotate = true;
                                     }
-                                    mainClass._got_cake_color.publish(got);
                                     for (int i = 0;i < 2;i++)
                                     {
                                         mainClass.poseStamped_set(dockmode, cake_picked[i], esrv.response.picked.poses[i].position.x, esrv.response.picked.poses[i].position.y, esrv.response.picked.poses[i].orientation.z, esrv.response.picked.poses[i].orientation.w);
@@ -727,6 +815,14 @@ int main(int argc, char **argv)
                                 {
                                     if (!is_rotate)
                                     {
+                                        if (doing_mode == STEAL)
+                                        {
+                                            now_Mission = HOME;
+                                            mission_print = false;
+                                            camColor.data = 0;
+                                            mainClass._cam_which_color.publish(camColor);
+                                            break;
+                                        }
                                         now_Camera_Mode = NO_CAM;
                                         camColor.data = 0;
                                         mainClass._cam_which_color.publish(camColor);
@@ -749,6 +845,14 @@ int main(int argc, char **argv)
                                         {
                                             if (!is_rotate)
                                             {
+                                                if (doing_mode == STEAL)
+                                                {
+                                                    now_Mission = HOME;
+                                                    mission_print = false;
+                                                    camColor.data = 0;
+                                                    mainClass._cam_which_color.publish(camColor);
+                                                    break;
+                                                }
                                                 now_Camera_Mode = NO_CAM;
                                                 camColor.data = 0;
                                                 mainClass._cam_which_color.publish(camColor);
@@ -805,6 +909,14 @@ int main(int argc, char **argv)
                                             else
                                             {
                                                 c_or_d = 1;
+                                                if (doing_mode == STEAL)
+                                                {
+                                                    now_Mission = RELEASE;
+                                                    mission_print = false;
+                                                    camColor.data = 0;
+                                                    mainClass._cam_which_color.publish(camColor);
+                                                    break;
+                                                }
                                                 now_Camera_Mode = NO_CAM;
                                                 camColor.data = 0;
                                                 mainClass._cam_which_color.publish(camColor);
@@ -824,8 +936,17 @@ int main(int argc, char **argv)
                                         }
                                         else
                                         {
+                                            mainClass._got_cake_color.publish(got);
                                             if (!is_rotate)
                                             {
+                                                if (doing_mode == STEAL)
+                                                {
+                                                    now_Mission = RELEASE;
+                                                    mission_print = false;
+                                                    camColor.data = 0;
+                                                    mainClass._cam_which_color.publish(camColor);
+                                                    break;
+                                                }
                                                 now_Camera_Mode = NO_CAM;
                                                 camColor.data = 0;
                                                 mainClass._cam_which_color.publish(camColor);
@@ -851,6 +972,15 @@ int main(int argc, char **argv)
                                 }
                                 else
                                 {
+                                    if (doing_mode == STEAL)
+                                    {
+                                        now_Mission = RELEASE;
+                                        mission_print = false;
+                                        camColor.data = 0;
+                                        mainClass._cam_which_color.publish(camColor);
+                                        cam_pub_once = false;
+                                        break;
+                                    }
                                     now_Camera_Mode = NO_CAM;
                                     camColor.data = 0;
                                     mainClass._cam_which_color.publish(camColor);
@@ -1121,7 +1251,23 @@ int main(int argc, char **argv)
                     }
                     else if (!got_release_point && !hanoiing)
                     {
-                        if (release.data == 0 || release.data == robot+1)
+                        if (doing_mode = STEAL)
+                        {
+                            rsrv.request.num = 2;
+                            if (mainClass._release_client.call(rsrv))
+                            {
+                                if (rsrv.response.picked.header.frame_id != "")
+                                {
+                                    rid = rsrv.response.picked.header.frame_id;
+                                    for (int i = 0;i < 4;i++)
+                                    {
+                                        mainClass.poseStamped_set(i%2, release_point[i], rsrv.response.picked.poses[i].position.x, rsrv.response.picked.poses[i].position.y, rsrv.response.picked.poses[i].orientation.z, rsrv.response.picked.poses[i].orientation.w);
+                                    }
+                                    got_release_point = true;
+                                }
+                            }
+                        }
+                        else if (release.data == 0 || release.data == robot+1)
                         {
                             release.data = robot+1;
                             mainClass._release.publish(release);
@@ -1136,7 +1282,6 @@ int main(int argc, char **argv)
                                         mainClass.poseStamped_set(i%2, release_point[i], rsrv.response.picked.poses[i].position.x, rsrv.response.picked.poses[i].position.y, rsrv.response.picked.poses[i].orientation.z, rsrv.response.picked.poses[i].orientation.w);
                                     }
                                     got_release_point = true;
-                                    hanoiing = false;
                                     // cout << "rid : " << rid << endl;
                                 }
                             }
@@ -1154,7 +1299,6 @@ int main(int argc, char **argv)
                                         mainClass.poseStamped_set(i%2, release_point[i], rsrv.response.picked.poses[i].position.x, rsrv.response.picked.poses[i].position.y, rsrv.response.picked.poses[i].orientation.z, rsrv.response.picked.poses[i].orientation.w);
                                     }
                                     got_release_point = true;
-                                    hanoiing = false;
                                     // cout << "rid : " << rid << endl;
                                 }
                             }
@@ -1237,6 +1381,16 @@ int main(int argc, char **argv)
                             else if (mission_success)
                             {
                                 mission_success = false;
+                                if (reCake == 1)
+                                {
+                                    plates[int(rid[2])] = 1;
+                                    std_msgs::Int32MultiArray pA;
+                                    for (int i = 0;i < 5;i++)
+                                    {
+                                        pA.data.push_back(plates[i]);
+                                    }
+                                    mainClass._plates.publish(pA);
+                                }
                                 if (reCake < 3)
                                 {
                                     reCake++;
@@ -1279,28 +1433,54 @@ int main(int argc, char **argv)
                         ROS_WARN("===== Time to Go Home !!! =====");
                         moving = false;
                     }
-                    else if (!got_steal_cake)
+                    else if (doing_mode == STEAL)
                     {
                         now_Mission = HOME;
                         mission_print = false;
-                        // if (mainClass._steal_client.call(ssrv))
-                        // {
-                        //     if (srv.response.picked.header.frame_id != "")
-                        //     {
-                        //         mainClass.poseStamped_set(0, steal_picked, ssrv.response.picked.pose.position.x, ssrv.response.picked.pose.position.y, ssrv.response.picked.pose.orientation.z, ssrv.response.picked.pose.orientation.w);
-                        //         got_steal_cake=true;
-                        //     }
-                        // }
+                        break;
+                    }
+                    else if (!got_steal_cake)
+                    {
+                        // now_Mission = HOME;
+                        // mission_print = false;
+                        if (mainClass._steal_client.call(ssrv))
+                        {
+                            if (ssrv.response.picked.header.frame_id != "")
+                            {
+                                mainClass.poseStamped_set(0, steal_picked, ssrv.response.picked.pose.position.x, ssrv.response.picked.pose.position.y, ssrv.response.picked.pose.orientation.z, ssrv.response.picked.pose.orientation.w);
+                                got_steal_cake = true;
+                            }
+                        }
                     }
                     else if (got_steal_cake && !hanoiing)
                     {
-                        int emptySide = -1;
-                        for (int i = 0;i < 4;i++)
+                        if (!moving && !doing)
                         {
-                            if (fullness[i] == 0)
+                            if (steal_picked.pose.position.x < 0)
                             {
-                                emptySide = i;
-                                break;
+                                now_Mission = HOME;
+                                mission_print = false;
+                            }
+                            else if (route_failed)
+                            {
+                                now_Mission = HOME;
+                                mission_print = false;
+                            }
+                            else if (!arrived && !mission_success)
+                            {
+                                mainClass._where2go.publish(steal_picked);
+                                ROS_INFO("Heading over to x:[%.3f] y:[%.3f] ang:[%.1f]", steal_picked.pose.position.x, steal_picked.pose.position.y, mainClass.q2e(0, 0, steal_picked.pose.orientation.z, steal_picked.pose.orientation.w));
+                                moving = true;
+                            }
+                            else if (arrived)
+                            {
+                                arrived = false;
+                                now_Mission = CAKE;
+                                now_Camera_Mode = USE_CAM;
+                                lastCakeColor = 3;
+                                doing_mode = STEAL;
+                                got_cake_picked = false;
+                                cakeNum = 0;
                             }
                         }
                     }

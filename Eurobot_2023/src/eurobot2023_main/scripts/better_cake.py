@@ -33,6 +33,9 @@ startPos = [[-1, -1], [-1, -1]]
 absAng = [0, 0]
 
 picked = [[[-1, -1],  [-1, -1],  [-1, -1]], [[-1, -1],  [-1, -1],  [-1, -1]]]
+lastpicked = []
+cakeNum = Int32MultiArray()
+cakeCheckPos = [-1, -1]
 used = []
 adjustedNum = []
 got = [[0, 0, 0], [0, 0, 0]]  # brown, yellow, pink
@@ -87,7 +90,10 @@ def enemiesPos2_callback(msg):
 
 def adjust_callback(msg):
     global adjustedNum, allCakes
-    allCakes[math.floor(msg.z/4)][int(msg.z)%4] = [msg.x * 1000, msg.y * 1000]
+    if [msg.x, msg.y] == [-1, -1]:
+        allCakes[math.floor(msg.z/4)][int(msg.z)%4] = [-1, -1]
+    else:
+        allCakes[math.floor(msg.z/4)][int(msg.z)%4] = [msg.x * 1000, msg.y * 1000]
     adjustedNum.append(msg.z)
 
 def got_callback(msg):
@@ -141,7 +147,7 @@ def tPoint(mode, pos, target):
         return point
 
 def robotPublish(num, color, count):
-    global robotPose, tempFull
+    global robotPose, tempFull, cakeNum
 
     c = '?'
     if color == 0:
@@ -159,6 +165,10 @@ def robotPublish(num, color, count):
                 door = 0
             robotPose.header.frame_id += str(door)
     robotPose.header.stamp = rospy.Time.now()
+
+    for i in range(3):
+        if cakeCheckPos in allCakes[i]:
+            cakeNum.data.append(4*i+allCakes[i].index(cakeCheckPos))
 
     pose = Pose()
     pt = tPoint('d', preposition, position)
@@ -408,10 +418,12 @@ def listener():
     rospy.spin()
 
 def publisher():
-    global quaternion, enemies, startPos, currMin, picked, used, robotNum, robotPose, tempFull, minAngle, tempAllCakes, outAngle, position, quaternion, tempGot, preposition, used_changed
+    global quaternion, enemies, startPos, currMin, picked, used, robotNum, robotPose, tempFull, minAngle, tempAllCakes, outAngle, position, quaternion, tempGot, preposition, used_changed, cakeNum, cakeCheckPos, lastpicked
     color = -1
 
     picked = [[[-1, -1],  [-1, -1],  [-1, -1]], [[-1, -1],  [-1, -1],  [-1, -1]]]
+    
+    cakeNum.data = []
     used = []
     tempGot[robotNum] = list(got[robotNum])
     tempFull = [[0, 0, 0, 0], [0, 0, 0, 0]]
@@ -468,6 +480,7 @@ def publisher():
                         for i in range(3):
                             if picked[robotNum][pos] in allCakes[i]:
                                 color = i
+                        cakeCheckPos = list(picked[robotNum][pos])
                         position[axis] = picked[robotNum][pos][axis] * 0.001
                     quaternion = euler2quaternion(0, 0, outAngle[robotNum][pos] * math.pi / 180)
                     robotPublish(robotNum, color, pos)
@@ -490,7 +503,18 @@ def publisher():
             position = [-1, -1]
             color = -1
             robotPublish(robotNum, color, pos)
-        # print("picked", picked[robotNum])
+
+        for i in range(3):
+            if len(cakeNum.data) < 3:
+                cakeNum.data.append(-1)
+        
+        pub = rospy.Publisher('cakeNum'+str(robotNum), Int32MultiArray, queue_size=1000)
+        rospy.sleep(0.3)
+        pub.publish(cakeNum)
+
+        if lastpicked != picked[robotNum]:
+            print("picked", picked[robotNum], got[robotNum], cakeNum.data)
+            lastpicked = picked[robotNum]
         # print(robotPose.header.frame_id)
         # print(fullness[robotNum])
         # print(outAngle[robotNum])

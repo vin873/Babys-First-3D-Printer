@@ -7,6 +7,7 @@
   <node name="first_cherry" pkg="eurobot2023_main" type="first_cherry.py" output="screen" />
   <node name="mission_callback" pkg="eurobot2023_main" type="ultra_mission_feedback.py" output="screen" />
   <node name="release" pkg="eurobot2023_main" type="release.py" output="screen" />
+  <node name="steal" pkg="eurobot2023_main" type="steal.py" output="screen" />
   <node name="main" pkg="eurobot2023_main" respawn="false" type="Babies_First_CNC" output="screen" />
   
 </launch>

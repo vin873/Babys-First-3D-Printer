@@ -26,7 +26,7 @@ tempFull = [0, 0, 0, 0]
 minAngle = 360
 headAng = -45
 outAngle = 0
-dockDis = 0.240
+dockDis = 0.300
 cakeDis = 0.075
 cameraPos = [-1, -1]
 color = 0
@@ -93,7 +93,7 @@ def camera_callback(msg):
     global cameraPos, startPos, absAng, headAng, rotateCount, camMode
     rotateCount = 0
     camMode = msg.z
-    if int(msg.z) != -1:
+    if int(msg.z) >= 0:
         cameraPos[0], cameraPos[1] = msg.x*1000, msg.y*1000
     else:
         cameraPos = [-1, -1]

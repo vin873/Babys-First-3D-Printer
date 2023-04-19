@@ -16,21 +16,22 @@ robotNum = 0
 startPos = [[-1, -1], [-1, -1]]
 
 def cherryE_callback(msg):
+    global cherry
     for i in range(4):
         cherry[i] = msg.data[i]
 
 def mission_callback(msg):
-    global df
+    global df, cherry
 
     if msg.data[0] == 'b' or msg.data[0] == 'y' or msg.data[0] == 'p':
         df[int(msg.data[1])+1] = 1
         df[0] = 1
     elif msg.data[0] == 'c':
         df[0] = 1
-        publisher(1)
+        # publisher(1)
     elif msg.data[0] == 'o':
         df[0] = 1
-        publisher(1)
+        # publisher(1)
     elif msg.data[0] == 's':
         df[0] = 1
         if msg.data[1] == '4':
@@ -39,11 +40,11 @@ def mission_callback(msg):
             cherry[2] = 0
         else:
             cherry[int(msg.data[1])] = 0
-        publisher2()
-        publisher(3)
+        # publisher2()
+        # publisher(3)
     elif msg.data[0] == 'v':
         df[0] = 1
-        publisher(1)
+        # publisher(1)
     elif msg.data[0] == 'u':
         df[0] = 1
         publisher(5)
@@ -54,17 +55,6 @@ def mission_callback(msg):
 
     elif msg.data[0] == 'f' or msg.data[0] == 'd':
         df[0] = 1
-    
-
-def startPos1_callback(msg):
-    global startPos, absAng
-    startPos[0][0] = msg.pose.pose.position.x * 1000
-    startPos[0][1] = msg.pose.pose.position.y * 1000
-
-def startPos2_callback(msg):
-    global startPos
-    startPos[1][0] = msg.pose.pose.position.x * 1000
-    startPos[1][1] = msg.pose.pose.position.y * 1000
 
 def fullness_callback(msg):
     global df
@@ -81,7 +71,7 @@ def listener():
     rospy.spin()
 
 def publisher(time):
-    global df
+    global df, done
     pub = rospy.Publisher('/donefullness'+str(robotNum), Int16MultiArray, queue_size=1000)
     done.data = df
     print("mission callback from ultra_mission_feedback")
@@ -89,7 +79,7 @@ def publisher(time):
     pub.publish(done)
     
 def publisher2():
-    global cherry
+    global cherry, done2
     pub2 = rospy.Publisher('/cherryExistence', Int32MultiArray, queue_size=1000)
     done2.data = cherry
     rospy.sleep(0.3)
