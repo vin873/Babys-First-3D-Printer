@@ -40,7 +40,7 @@ def mission_callback(msg):
             cherry[2] = 0
         else:
             cherry[int(msg.data[1])] = 0
-        # publisher2()
+        publisher2()
         # publisher(3)
     elif msg.data[0] == 'v':
         df[0] = 1

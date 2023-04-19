@@ -21,7 +21,7 @@ enemies = [[-1, -1], [-1, -1]]
 startPos = [[1500, 1000], [1500, 1000]]
 absAng = [0, 0]
 
-picked = [[-1, -1],  [-1, -1],  [-1, -1]]
+picked = []
 used = Pose()
 tempFull = [[0, 0, 0, 0], [0, 0, 0, 0]]
 plates = [[1125, 225], [1125, 1775], [1875, 1775], [1875, 225], [2775, 225], [2775, 725], [2775, 1275], [2775, 1775]]
@@ -117,7 +117,7 @@ def robotPublish(num, target):
     robotPose.header.stamp = rospy.Time.now()
 
     if target == []:
-        robotPose.header.frame_id = str(-1)
+        robotPose.header.frame_id = '?'
         robotPose.pose.position.x = -1
         robotPose.pose.position.y = -1
     else:
@@ -243,6 +243,8 @@ def publisher():
         robotPose.pose.orientation.y = quat.y
         robotPose.pose.orientation.z = quat.z
         robotPose.pose.orientation.w = quat.w
+    else:
+        robotPublish(robotNum, picked)
 
 if __name__=="__main__":
     try:

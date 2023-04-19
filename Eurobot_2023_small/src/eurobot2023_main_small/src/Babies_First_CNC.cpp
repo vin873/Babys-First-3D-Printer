@@ -73,10 +73,10 @@ int reCake = 0;
 int lastCakeColor = -1;
 int relative_point = -999;
 int cherryNum = 0;
-int cherryDelay = 3.5;
+int cherryDelay = 1.5;
 int who_basket = -1;
 int home_num = -1;
-int now_Mission = STEAL;
+int now_Mission = CAKE;
 int now_Camera_Mode = NO_CAM;
 int now_Status = SETUP;
 int now_Mode = NORMAL;
@@ -355,7 +355,7 @@ public:
         {
             checkId = 3;
         }
-        if (now_Mission == CHERRY && got_cherry_picked && cherryE[checkId] == 0)
+        if (now_Mission == CHERRY && got_cherry_picked && cherryE[checkId] == 0 && !doing)
         {
             got_cherry_picked = false;
             moving = false;
@@ -403,7 +403,7 @@ public:
     ros::Subscriber _got_what_color = nh.subscribe<std_msgs::Int32MultiArray>("gotcake"+to_string(robot), 1000, &mainProgram::what_color_cake_callback, this);
     ros::Subscriber _basketornot = nh.subscribe<std_msgs::Int32>("basketornot", 1000, &mainProgram::basket_callback, this);
     ros::Subscriber _another_release = nh.subscribe<std_msgs::Int32>("release"+to_string(!bool(robot)), 1000, &mainProgram::anothere_callback, this);
-    ros::Subscriber _plate_full = nh.subscribe<std_msgs::Int32MultiArray>("finishall", 1000, &mainProgram::plate_callback, this);
+    ros::Subscriber _plate_full = nh.subscribe<std_msgs::Int32MultiArray>("plates", 1000, &mainProgram::plate_callback, this);
     ros::Subscriber _finishall = nh.subscribe<std_msgs::Bool>("finishall", 1000, &mainProgram::finishall_callback, this);
     ros::ServiceClient _cake_client = nh.serviceClient<eurobot2023_main_small::cake>("cake"+to_string(robot));
     ros::ServiceClient _cherry_client = nh.serviceClient<eurobot2023_main_small::cherry>("cherry"+to_string(robot));
@@ -479,10 +479,10 @@ int main(int argc, char **argv)
 
                     mainClass.poseStamped_set(0, basket_point[0], 0.245, 0.225, 0, 1);
                     mainClass.poseStamped_set(0, basket_point[1], 0.225, 1.775, 0, 1);
-                    mainClass.poseStamped_set(0, home[0][0], 1.200, 1.725, 0, 1);
-                    mainClass.poseStamped_set(0, home[0][1], 0.900, 1.550, 0, 1);
-                    mainClass.poseStamped_set(0, home[1][0], 1.200, 0.275, 0, 1);
-                    mainClass.poseStamped_set(0, home[1][1], 0.900, 0.450, 0, 1);
+                    mainClass.poseStamped_set(0, home[0][0], 1.230, 1.775, 0, 1);
+                    mainClass.poseStamped_set(0, home[0][1], 0.870, 1.550, 0, 1);
+                    mainClass.poseStamped_set(0, home[1][0], 1.230, 0.225, 0, 1);
+                    mainClass.poseStamped_set(0, home[1][1], 0.870, 0.450, 0, 1);
                 }
                 printOnce = true;
 
@@ -1251,7 +1251,7 @@ int main(int argc, char **argv)
                     }
                     else if (!got_release_point && !hanoiing)
                     {
-                        if (doing_mode = STEAL)
+                        if (doing_mode == STEAL)
                         {
                             rsrv.request.num = 2;
                             if (mainClass._release_client.call(rsrv))

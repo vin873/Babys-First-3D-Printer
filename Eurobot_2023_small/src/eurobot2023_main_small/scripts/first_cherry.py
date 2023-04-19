@@ -73,14 +73,11 @@ def cherryPublish():
     robotPose.header.frame_id = num
     robotPose.header.stamp = rospy.Time.now()
 
-    if cside[0][0] <= 500:
+    if num == '0' or num == '1' or num == '2':
         cAng = 90
-    elif cside[0][0] <= 1000:
+    elif num == '3' or num == '4' or num == '5':
         cAng = 180
-    elif cside[0][0] <= 1500:
-        cAng = 90
-    else:
-        cAng = 180
+        
     quat = Quaternion()
     quat = euler2quaternion(0, 0, cAng*math.pi/180)
 
