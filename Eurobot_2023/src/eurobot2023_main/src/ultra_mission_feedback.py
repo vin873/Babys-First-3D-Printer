@@ -28,10 +28,10 @@ def mission_callback(msg):
         df[0] = 1
     elif msg.data[0] == 'c':
         df[0] = 1
-        # publisher(1)
+        publisher(1)
     elif msg.data[0] == 'o':
         df[0] = 1
-        # publisher(1)
+        publisher(1)
     elif msg.data[0] == 's':
         df[0] = 1
         if msg.data[1] == '4':
@@ -40,11 +40,11 @@ def mission_callback(msg):
             cherry[2] = 0
         else:
             cherry[int(msg.data[1])] = 0
-        # publisher2()
-        # publisher(3)
+        publisher2()
+        publisher(3)
     elif msg.data[0] == 'v':
         df[0] = 1
-        # publisher(1)
+        publisher(1)
     elif msg.data[0] == 'u':
         df[0] = 1
         publisher(5)
