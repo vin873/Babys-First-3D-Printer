@@ -21,24 +21,25 @@ enemies = [[-1, -1], [-1, -1]]
 startPos = [[1500, 1000], [1500, 1000]]
 absAng = [0, 0]
 
-picked = [[[-1, -1],  [-1, -1],  [-1, -1]], [[-1, -1],  [-1, -1],  [-1, -1]]]
-used = []
+picked = [[-1, -1],  [-1, -1],  [-1, -1]]
+used = Pose()
 tempFull = [[0, 0, 0, 0], [0, 0, 0, 0]]
-tempPicked=[]
-plates = [[225, 225], [225, 1775], [1125, 225], [1125, 1775], [1875, 225], [1875, 1775], [2775, 225], [2775, 725], [2775, 1275], [2775, 1775]]
-plumpCakes=[[-1, -1,"", [-1, -1]], [125, 125, 10, [225, 225]]]
+plates = [[1125, 225], [1125, 1775], [1875, 1775], [1875, 225], [2775, 225], [2775, 725], [2775, 1275], [2775, 1775]]
+tempPlates = []
+camCakes = PoseArray()
+plumpCakes = [-1, -1,"", [-1, -1]]
 minAngle = 360
 headAng = -45
-outAngle = [0, 0]
+camAng = 45
 stealDis = 240
 
 robotNum = 0
 side = 0
 run_mode = ''
-quaternion = Quaternion()
-robotPose = PoseArray()
+robotPose = PoseStamped()
 
 def handle_steal(req):
+    # print('in')
     publisher()
     return stealResponse(robotPose)
 
@@ -113,20 +114,19 @@ def tPoint(pos, target):
 def robotPublish(num, target):
     global robotPose, startPos, robotNum
 
-    robotPose.header.frame_id = target[2]
     robotPose.header.stamp = rospy.Time.now()
 
-    pose = Pose()
-    pt = tPoint(startPos[robotNum], [target[0], target[1]])
-    # print(pt)
-    pose.position.x = pt[0]
-    pose.position.y = pt[1]
-    pose.orientation.x = quaternion.x
-    pose.orientation.y = quaternion.y
-    pose.orientation.z = quaternion.z
-    pose.orientation.w = quaternion.w
-    robotPose.poses=pose
-    print(robotPose)
+    if target == []:
+        robotPose.header.frame_id = str(-1)
+        robotPose.pose.position.x = -1
+        robotPose.pose.position.y = -1
+    else:
+        robotPose.header.frame_id = str(target[2])
+        pt = tPoint(startPos[robotNum], [target[0], target[1]])
+        # print(pt)
+        robotPose.pose.position.x = pt[0] * 0.001
+        robotPose.pose.position.y = pt[1] * 0.001
+        # print(robotPose)
 
 def euler2quaternion(roll, pitch, yaw):
     qx = np.sin(roll/2) * np.cos(pitch/2) * np.cos(yaw/2) - np.cos(roll/2) * np.sin(pitch/2) * np.sin(yaw/2)
@@ -157,8 +157,10 @@ def listener():
     rospy.init_node("steal")
     side = rospy.get_param('side')
     robotNum = rospy.get_param('robot')
-    # run_mode = rospy.get_param('run_mode')
+    run_mode = rospy.get_param('run_mode')
     rospy.Service('steal'+str(robotNum), steal, handle_steal)
+    rospy.Subscriber("cake_node/obstacle_position_array", PoseArray, plumpCakes_callback)
+    rospy.Subscriber("using_steal"+str(not bool(robotNum)), Pose, used_callback)
     publisher()
     if run_mode == 'run':
         rospy.Subscriber("/robot1/ekf_pose", PoseWithCovarianceStamped, startPos1_callback)
@@ -170,63 +172,77 @@ def listener():
         rospy.Subscriber("/robot2/odom", Odometry, startPos2_callback)
         rospy.Subscriber("/rival1/odom", Odometry, enemiesPos1_callback)
         rospy.Subscriber("/rival2/odom", Odometry, enemiesPos2_callback)
-    # rospy.Subscriber("/plumpCakes", PoseArray, plumpCakes_callback)
     rospy.spin()
 
 def plumpCakes_callback(msg):
-    global plumpCakes, plates
-    for i in range(len(msg.poses)):
-        plumpCakes[i][0] = msg.poses[i].position.x * 1000
-        plumpCakes[i][1] = msg.poses[i].position.y * 1000
-        plumpCakes[i][2] = int(msg.poses[i].position.z)
-    for i in range(len(plates)):
-        if i %2 != side:
-            plates.pop(i)
-    for cake in plumpCakes:
-        for plate in plates:
-            if abs(cake[0] - plate[0]) < 225 and abs(cake[1] - plate[1]) < 225:
-                cake.append(plates.index(plate))
-            else:
-                plumpCakes.remove(cake)
+    global camCakes
+    camCakes = msg
+    # print(camCakes)
+
+def used_callback(msg):
+    global used
+    used = msg
 
 def publisher():
-    global quaternion, enemies, startPos, picked, used, robotNum, robotPose, tempFull, minAngle, tempPicked, outAngle, quaternion
+    global enemies, startPos, picked, used, robotNum, robotPose, tempFull, minAngle, plumpCakes, tempPlates
     tempMinDist = 99999
-    tempPlatePicked = [-1, -1]
-    tempPicked = [-1, -1]
-    pos = startPos[robotNum]
+    tempPlatePicked = 0
+    picked = []
+    num = robotNum
+    pos = list(startPos[robotNum])
+
+    tempPlates = []
+    plumpCakes = []
+    tempPlump=[]
+    for i in range(len(camCakes.poses)):
+        tempPlump=[]
+        tempPlump.append(camCakes.poses[i].position.x * 1000)
+        tempPlump.append(camCakes.poses[i].position.y * 1000)
+        tempPlump.append(int(camCakes.poses[i].position.z))
+        plumpCakes.append(tempPlump)
+    for i in range(len(plates)):
+        if i % 2 == side:
+            tempPlates.append(list(plates[i]))
+    purgeList=[]
+    for cake in plumpCakes:
+        flag=0
+        for plate in tempPlates:
+            if abs(cake[0] - plate[0]) < 225 and abs(cake[1] - plate[1]) < 225:
+                cake.append(plates.index(plate)+1)
+                flag=1
+                break
+        if flag==0:
+            purgeList.append(cake)
+    for cake in purgeList:
+        plumpCakes.remove(cake)
+
     for target in plumpCakes:
-        if target not in used and target[0] != -1 and target[1] != -1:
+        if target[0] != used.position.x and target[1] != used.position.y and target[0] != -1  and target[1] != -1:
             if tempMinDist > euclidean(pos, (target[0], target[1])) - closerEnemy((target[0], target[1])):
                 tempMinDist = euclidean(pos, (target[0], target[1])) - closerEnemy((target[0], target[1]))
                 tempPlatePicked = target[3]
-    print(tempPlatePicked)
     tempMinDist = 99999
     for target in plumpCakes:
-        if target[3]==tempPlatePicked and target[0] != -1 and target[1] != -1:
+        if target[3] == tempPlatePicked and target[0] != -1 and target[1] != -1:
              if tempMinDist > euclidean(pos, (target[0], target[1])):
                 tempMinDist = euclidean(pos, (target[0], target[1]))
-                tempPicked = target
-    print(picked)
+                picked = list(target)
 
-    anglePos = startPos[robotNum]
-    tempAng = list(absAng)
-    minAngle = 360
-    num = robotNum
-    tAngle = (np.rad2deg(np.arctan2(picked[1] - anglePos[1], picked[0] - anglePos[0])) - tempAng[robotNum] + 360) % 360
-    tAngles = [360, 360, 360, 360]
-    for i in range(4):
-        if tempFull[num][i] == 0:
-            tAngles[i] = (tAngle - i * 90 + 360) % 360
-            if tAngles[i] > 180:
-                tAngles[i] -= 360
-    for i in tAngles:
-        if abs(i) < abs(minAngle):
-            minAngle = i
-    outAngle[num] = minAngle + tempAng[num] + headAng
+    if picked != []:
+        pub = rospy.Publisher('using_steal'+str(robotNum), Pose, queue_size=1000)
+        used_pose = Pose()
+        used_pose.position.x = picked[0]
+        used_pose.position.y = picked[1]
+        used_pose.position.z = picked[2]
+        pub.publish(used_pose)
 
-    quaternion = euler2quaternion(0, 0, outAngle[robotNum] * math.pi / 180)
-    robotPublish(robotNum, tempPicked)
+        robotPublish(robotNum, picked)
+        camtAng = (np.rad2deg(np.arctan2(picked[1] - pos[1], picked[0] - pos[0])) + 360 - camAng) % 360
+        quat = euler2quaternion(0, 0, camtAng*math.pi/180)
+        robotPose.pose.orientation.x = quat.x
+        robotPose.pose.orientation.y = quat.y
+        robotPose.pose.orientation.z = quat.z
+        robotPose.pose.orientation.w = quat.w
 
 if __name__=="__main__":
     try:

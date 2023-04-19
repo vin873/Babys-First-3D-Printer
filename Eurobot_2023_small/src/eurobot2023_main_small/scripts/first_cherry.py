@@ -94,10 +94,6 @@ def cherryPublish():
         pose.orientation.w = quat.w
         robotPose.poses.append(pose)
 
-def cherry_callback(msg):
-    if msg.data:
-        publisher()
-
 def cherryE_callback(msg):
     global cherryE
     # print(cherry)
@@ -175,6 +171,7 @@ def listener():
     robotNum = rospy.get_param('robot')
     run_mode = rospy.get_param('run_mode')
     rospy.Service('cherry'+str(robotNum), cherry, handle_cherry)
+    rospy.Subscriber('cherryExistence', Int32MultiArray, cherryE_callback)
     if run_mode == 'run':
         rospy.Subscriber("/robot1/ekf_pose", PoseWithCovarianceStamped, startPos1_callback)
         rospy.Subscriber("/robot2/ekf_pose", PoseWithCovarianceStamped, startPos2_callback)
@@ -208,7 +205,7 @@ def publisher():
             pickedSide[0] = where2suck(startPos[0], 0)
     
     robotPose.poses = []
-    # print(pickedSide)
+    print(pickedSide, cherryE)
     cherryPublish()
 
 if __name__=="__main__":
