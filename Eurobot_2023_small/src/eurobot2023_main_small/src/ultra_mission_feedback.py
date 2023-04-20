@@ -12,6 +12,7 @@ done2 = Int32MultiArray()
 df = [0, 0, 0, 0, 0]
 cherry = [1, 1, 1, 1]
 robotNum = 0
+run_mode = ''
 
 startPos = [[-1, -1], [-1, -1]]
 
@@ -26,12 +27,18 @@ def mission_callback(msg):
     if msg.data[0] == 'b' or msg.data[0] == 'y' or msg.data[0] == 'p':
         df[int(msg.data[1])+1] = 1
         df[0] = 1
+
     elif msg.data[0] == 'c':
         df[0] = 1
-        # publisher(1)
+        if run_mode == 'sim':
+            publisher(1)
+
     elif msg.data[0] == 'o':
         df[0] = 1
-        # publisher(1)
+        df[int(msg.data[1])+1] = 0
+        if run_mode == 'sim':
+            publisher(1)
+        
     elif msg.data[0] == 's':
         df[0] = 1
         if msg.data[1] == '4':
@@ -41,10 +48,14 @@ def mission_callback(msg):
         else:
             cherry[int(msg.data[1])] = 0
         publisher2()
-        # publisher(3)
+        if run_mode == 'sim':
+            publisher(1.5)
+
     elif msg.data[0] == 'v':
         df[0] = 1
-        # publisher(1)
+        if run_mode == 'sim':
+            publisher(1)
+
     elif msg.data[0] == 'u':
         df[0] = 1
         publisher(5)
@@ -62,9 +73,10 @@ def fullness_callback(msg):
         df[i+1] = msg.data[i+1]
 
 def listener():
-    global robotNum
+    global robotNum, run_mode
     rospy.init_node("ultra_mission_feedback")
     robotNum = rospy.get_param('robot')
+    run_mode = rospy.get_param('run_mode')
     rospy.Subscriber("/cherryExistence", Int32MultiArray, cherryE_callback)
     rospy.Subscriber("/mission"+str(robotNum), String, mission_callback)
     rospy.Subscriber("/donefullness"+str(robotNum), Int16MultiArray, fullness_callback)

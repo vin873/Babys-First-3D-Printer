@@ -77,7 +77,9 @@ def cherryPublish():
         cAng = 90
     elif num == '3' or num == '4' or num == '5':
         cAng = 180
-        
+    else:
+        cAng = 0
+
     quat = Quaternion()
     quat = euler2quaternion(0, 0, cAng*math.pi/180)
 
@@ -202,7 +204,7 @@ def publisher():
             pickedSide[0] = where2suck(startPos[0], 0)
     
     robotPose.poses = []
-    print(pickedSide, cherryE)
+    # print(pickedSide, cherryE)
     cherryPublish()
 
 if __name__=="__main__":
