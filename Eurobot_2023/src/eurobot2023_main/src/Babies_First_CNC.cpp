@@ -162,6 +162,7 @@ public:
         _cakeNum = nh.subscribe<std_msgs::Int32MultiArray>("cakeNum"+to_string(robot), 1000, &mainProgram::cakeNum_callback, this);
         _got_cake_color = nh.advertise<std_msgs::Int32MultiArray>("gotcake"+to_string(robot), 1000);
         _release = nh.advertise<std_msgs::Int32>("release"+to_string(robot), 1000);
+        _changeHome = nh.advertise<std_msgs::Bool>("changeHome"+to_string(robot), 1000);
         _another_release = nh.subscribe<std_msgs::Int32>("release"+to_string(!bool(robot)), 1000, &mainProgram::anothere_callback, this);
         _cake_client = nh.serviceClient<eurobot2023_main::cake>("cake"+to_string(robot));
         _cherry_client = nh.serviceClient<eurobot2023_main::cherry>("cherry"+to_string(robot));
@@ -398,6 +399,7 @@ public:
     ros::Publisher _ibasket = nh.advertise<std_msgs::Int32>("basketornot", 1000);
     ros::Publisher _release = nh.advertise<std_msgs::Int32>("release"+to_string(robot), 1000);
     ros::Publisher _plates = nh.advertise<std_msgs::Int32MultiArray>("plates", 1000);
+    ros::Publisher _changeHome = nh.advertise<std_msgs::Bool>("changeHome"+to_string(robot), 1000);
     ros::Publisher _ifinish = nh.advertise<std_msgs::Bool>("finishall", 1000);
     ros::Subscriber _cakeNum = nh.subscribe<std_msgs::Int32MultiArray>("cakeNum"+to_string(robot), 1000, &mainProgram::cakeNum_callback, this);
     ros::Subscriber _got_what_color = nh.subscribe<std_msgs::Int32MultiArray>("gotcake"+to_string(robot), 1000, &mainProgram::what_color_cake_callback, this);
@@ -518,6 +520,7 @@ int main(int argc, char **argv)
                 break;
 
             case RUN:
+                
                 if (!printOnce)
                 {
                     initialTime = ros::Time::now();
@@ -528,6 +531,15 @@ int main(int argc, char **argv)
                     // }
                 }
                 printOnce = true;
+
+                if (now_Mission != HOME && now_Mission != FINISH && ros::Time::now().toSec() - initialTime.toSec() >= go_home_time+5)
+                {
+                    missionStr.data = "d0";
+                    mainClass._mission.publish(missionStr);
+                    ROS_INFO("Mission [%s] published!", missionStr.data.c_str());
+                    now_Status = FINISH;
+                    printOnce = false;
+                }
 
                 switch (now_Mission)
                 {
@@ -744,7 +756,7 @@ int main(int argc, char **argv)
                             else if (ros::Time::now().toSec() - startCameraTime >= camera_timeOut)
                             {
                                 c_or_d = 1;
-                                ROS_WARN("===== Failed to turn on camera! =====");
+                                ROS_ERROR("Failed to turn on camera!");
                                 if (doing_mode == STEAL)
                                 {
                                     now_Mission = HOME;
@@ -1059,8 +1071,18 @@ int main(int argc, char **argv)
                         doing = false;
                         arrived = false;
                         mission_success = false;
-                        now_Mission = BASKET;
-                        mission_print = false;
+                        if (who_basket != -1 && who_basket != robot)
+                        {
+                            doing_mode = CHERRY;
+                            now_Mission = STEAL;
+                            mission_print = false;
+                        }
+                        else
+                        {
+                            doing_mode = BASKET;
+                            now_Mission = BASKET;
+                            mission_print = false;
+                        }
                     }
                     else if (got_cherry_picked)
                     {
@@ -1151,8 +1173,9 @@ int main(int argc, char **argv)
                     {
                         if (cherryE[0] == 0 && cherryE[1] == 0 && cherryE[2] == 0 && cherryE[3] == 0)
                         {
-                            // now_Mission = STEAL;
-                            // mission_print = false;
+                            doing_mode = CHERRY;
+                            now_Mission = STEAL;
+                            mission_print = false;
                         }
                         else
                         {
@@ -1368,7 +1391,7 @@ int main(int argc, char **argv)
                                     releaseDelayTime = ros::Time::now().toSec();
                                     pub_delay = true;
                                 }
-                                if (ros::Time::now().toSec() - releaseDelayTime >= 0.4)
+                                if (ros::Time::now().toSec() - releaseDelayTime >= 0.25)
                                 {
                                     doing = true;
                                     arrived = false;
@@ -1452,14 +1475,32 @@ int main(int argc, char **argv)
                             }
                         }
                     }
+                    else if (got_steal_cake && hanoiing)
+                    {
+                        ROS_INFO("Still hanoiing !!");
+                        if (doing_mode == CHERRY)
+                        {
+                            now_Mission = BASKET;
+                            mission_print = false;
+                        }
+                    }
                     else if (got_steal_cake && !hanoiing)
                     {
                         if (!moving && !doing)
                         {
                             if (steal_picked.pose.position.x < 0)
                             {
-                                now_Mission = HOME;
-                                mission_print = false;
+                                ROS_INFO("Nothing to steal !!");
+                                if (doing_mode == CHERRY)
+                                {
+                                    now_Mission = BASKET;
+                                    mission_print = false;
+                                }
+                                else
+                                {
+                                    now_Mission = HOME;
+                                    mission_print = false;
+                                }
                             }
                             else if (route_failed)
                             {
@@ -1498,7 +1539,14 @@ int main(int argc, char **argv)
                     going_home = true;
                     if (!moving)
                     {
-                        if (!arrived)
+                        if (route_failed)
+                        {
+                            route_failed = false;
+                            std_msgs::Bool change;
+                            change.data = true;
+                            mainClass._changeHome.publish(change);
+                        }
+                        else if (!arrived)
                         {
                             if (home_num == -1)
                             {
@@ -1510,8 +1558,12 @@ int main(int argc, char **argv)
                         }
                         else
                         {
+                            missionStr.data = "A0";
+                            mainClass._mission.publish(missionStr);
+                            ROS_INFO("Mission [%s] published!", missionStr.data.c_str());
                             missionStr.data = "d0";
                             mainClass._mission.publish(missionStr);
+                            ROS_INFO("Mission [%s] published!", missionStr.data.c_str());
                             now_Status = FINISH;
                             printOnce = false;
                         }
@@ -1526,6 +1578,7 @@ int main(int argc, char **argv)
                 {
                     missionStr.data = "f0";
                     mainClass._mission.publish(missionStr);
+                    ROS_INFO("Mission [%s] published!", missionStr.data.c_str());
                     ROS_INFO("Finish all missions!");
                     ROS_INFO("Robot%d finish time : %.1f", robot+1, ros::Time::now().toSec() - initialTime.toSec());
                     if (!finish_mission.data)
@@ -1535,7 +1588,7 @@ int main(int argc, char **argv)
                     }
                     else
                     {
-                        ROS_INFO("Total time : %.1f", ros::Time::now().toSec() - initialTime.toSec());
+                        ROS_WARN("Total time : %.1f", ros::Time::now().toSec() - initialTime.toSec());
                     }
                     printOnce = true;
                 }
