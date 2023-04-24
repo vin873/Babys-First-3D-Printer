@@ -1,12 +1,13 @@
 <launch>
-    <node pkg="rosserial_python" type="serial_node.py" name="serial_node_jg" output="screen" >
-      <param name="port" value="/dev/ttyACM0" />
-      <param name="baud" value="115200" />
+
+    <node pkg="rosserial_server" type="serial_node" name="rosserial_plate" output="screen">
+        <param name="port" value="/dev/USB0-0" />
+        <param name="baud" value="115200" />
     </node>
 
-    <!-- <node pkg="rosserial_python" type="serial_node.py" name="serial_node_dp" output="screen" >
-      <param name="port" value="/dev/ttyACM1" />
-      <param name="baud" value="115200" />
-    </node> -->
+    <node pkg="rosserial_server" type="serial_node" name="rosserial_arm" output="screen">
+        <param name="port" value="/dev/USB0-1" />
+        <param name="baud" value="115200" />
+    </node>
 
 </launch>
