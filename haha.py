@@ -83,6 +83,9 @@ def publisher():
                 robotPose.header.frame_id = 'dock_mov'
             elif mode == 'r' or mode == 'R':
                 robotPose.header.frame_id = 'dock_rot'
+            elif mode == 'v' or mode == 'V':
+                robotPose.header.frame_id = 'dock_vibrate'
+            
             else:
                 print("Input error !!\n")
                 print("======================================== \n")
@@ -99,15 +102,17 @@ def publisher():
                 print("Input error !!\n")
                 print("======================================== \n")
                 continue
-
-            robotPose.pose.position.x = float(input("x : "))
-            robotPose.pose.position.y = float(input("y : "))
-            if mode != 'D' and mode != 'd':
-                ang = euler2quaternion(0, 0, float(input("ang : ")) * math.pi / 180)
-                robotPose.pose.orientation.x = ang.x
-                robotPose.pose.orientation.y = ang.y
-                robotPose.pose.orientation.z = ang.z
-                robotPose.pose.orientation.w = ang.w
+            
+            if mode != 'v' and mode != 'V':
+                if mode != 'r' and mode != 'R':
+                    robotPose.pose.position.x = float(input("x : "))
+                    robotPose.pose.position.y = float(input("y : "))
+                if mode != 'D' and mode != 'd':
+                    ang = euler2quaternion(0, 0, float(input("ang : ")) * math.pi / 180)
+                    robotPose.pose.orientation.x = ang.x
+                    robotPose.pose.orientation.y = ang.y
+                    robotPose.pose.orientation.z = ang.z
+                    robotPose.pose.orientation.w = ang.w
             pub.publish(robotPose)
             print("Target Published !!\n")
             finished = False
