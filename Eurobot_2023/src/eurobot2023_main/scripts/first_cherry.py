@@ -13,7 +13,7 @@ import numpy as np
 from scipy.spatial.distance import euclidean
 from eurobot2023_main.srv import *
 
-cherries = [[[200, 800], [400, 800]], [[1350, 1800], [1650, 1800]], [[2575, 800], [2825, 800]], [[1300, 250], [1650, 250]], [[200, 1200], [400, 1200]], [[2600, 1200], [2800, 1200]]]
+cherries = [[[140, 840], [400, 840]], [[1350, 1800], [1650, 1800]], [[2575, 800], [2825, 800]], [[1250, 200], [1600, 200]], [[200, 1200], [400, 1200]], [[2600, 1200], [2800, 1200]]]
 
 # subscribe cherries’ existence
 cherryE = [1, 1, 1, 1]
@@ -74,9 +74,9 @@ def cherryPublish():
     robotPose.header.stamp = rospy.Time.now()
 
     if num == '0' or num == '1' or num == '2':
-        cAng = 90
+        cAng = 270
     elif num == '3' or num == '4' or num == '5':
-        cAng = 180
+        cAng = 90
     else:
         cAng = 0
 
