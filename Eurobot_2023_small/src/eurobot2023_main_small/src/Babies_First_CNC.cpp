@@ -75,6 +75,7 @@ int relative_point = -999;
 int cherryNum = 0;
 int cherryDelay = 1.5;
 int who_basket = -1;
+int basketNum = 0;
 int home_num = -1;
 int now_Mission = CAKE;
 int now_Camera_Mode = NO_CAM;
@@ -479,8 +480,8 @@ int main(int argc, char **argv)
                     mainClass._all_set_up.publish(setup);
                     got.data = {0, 0, 0, 0};
 
-                    mainClass.poseStamped_set(0, basket_point[0], 0.245, 0.225, 0, 1);
-                    mainClass.poseStamped_set(0, basket_point[1], 0.225, 1.775, 0, 1);
+                    mainClass.poseStamped_set(0, basket_point[0], 0.225, 0.225, 1, 0);
+                    mainClass.poseStamped_set(0, basket_point[1], 0.225, 1.775, 1, 0);
                     mainClass.poseStamped_set(0, home[0][0], 1.230, 1.775, 0, 1);
                     mainClass.poseStamped_set(0, home[0][1], 0.870, 1.550, 0, 1);
                     mainClass.poseStamped_set(0, home[1][0], 1.230, 0.225, 0, 1);
@@ -1155,6 +1156,7 @@ int main(int argc, char **argv)
                     if (!mission_print)
                     {
                         ROS_WARN("===== Basket !!! =====");
+                        basketNum = 0;
                         mission_print = true;
                     }
 
@@ -1207,11 +1209,22 @@ int main(int argc, char **argv)
                             else if (arrived)
                             {
                                 arrived = false;
-                                missionStr.data = "u0";
-                                mainClass._mission.publish(missionStr);
-                                ROS_INFO("Mission [%s] published!", missionStr.data.c_str());
-                                doing = true;
-                                startMissionTime = ros::Time::now().toSec();
+                                basketNum++;
+                                if (basketNum == 1)
+                                {
+                                    mainClass.poseStamped_set(1, somewhere, 0.17, basket_point[side].pose.position.y, 1, 0);
+                                    mainClass._where2go.publish(somewhere);
+                                    ROS_INFO("Heading over to x:[%.3f] y:[%.3f] ang[%.1f]", somewhere.pose.position.x, somewhere.pose.position.y, mainClass.q2e(0, 0, somewhere.pose.orientation.z, somewhere.pose.orientation.y));
+                                    moving = true;
+                                }
+                                else if (basketNum == 2)
+                                {
+                                    missionStr.data = "u0";
+                                    mainClass._mission.publish(missionStr);
+                                    ROS_INFO("Mission [%s] published!", missionStr.data.c_str());
+                                    doing = true;
+                                    startMissionTime = ros::Time::now().toSec();
+                                }
                             }
                             else if (mission_success)
                             {
