@@ -80,7 +80,9 @@ def publisher():
             if mode == 'p' or mode == 'P':
                 robotPose.header.frame_id = 'path'
             elif mode == 'd' or mode == 'D':
-                robotPose.header.frame_id = 'dock_mov'
+                robotPose.header.frame_id = 'dock_mov_cake'
+            elif mode == 'c' or mode == 'C':
+                robotPose.header.frame_id = 'dock_mov_cherry'
             elif mode == 'r' or mode == 'R':
                 robotPose.header.frame_id = 'dock_rot'
             elif mode == 'v' or mode == 'V':

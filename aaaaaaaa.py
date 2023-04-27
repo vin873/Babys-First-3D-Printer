@@ -31,8 +31,6 @@ def mission1_feedback(msg):
 def publisher():
     global finished, robot
     rospy.init_node("aaaaaaaa")
-    # rospy.Subscriber('/donefullness0', Int32MultiArray, mission0_feedback)
-    # rospy.Subscriber('/donefullness1', Int32MultiArray, mission1_feedback)
 
     missionStr = String()
 
