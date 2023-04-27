@@ -49,7 +49,7 @@ headAng = -45
 camAng = 45
 outAngle = [[0, 0, 0], [0, 0, 0]]
 dockDis = 0.240
-cakeDis = 0.095
+cakeDis = 0.085
 
 robotNum = 0
 side = 0

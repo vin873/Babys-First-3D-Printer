@@ -55,12 +55,12 @@ def mission_callback(msg):
         df[0] = 1
         if run_mode == 'sim':
             publisher(1)
-            
+
     elif msg.data[0] == 'u':
         df[0] = 1
-        publisher(5)
+        publisher(7)
 
-        df[0] = 2
+        df = [2, 0, 1, 1 , 1]
         publisher(0.5)
         df[0] = 1
 
