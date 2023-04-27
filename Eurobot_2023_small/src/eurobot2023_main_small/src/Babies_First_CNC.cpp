@@ -21,6 +21,7 @@
 #include <geometry_msgs/Point.h>
 #include <geometry_msgs/PoseStamped.h>
 #include <geometry_msgs/PoseArray.h>
+#include <geometry_msgs/PoseWithCovarianceStamped.h>
 #include <eurobot2023_main_small/cake.h>
 #include <eurobot2023_main_small/cherry.h>
 #include <eurobot2023_main_small/release.h>
@@ -98,7 +99,7 @@ double camera_timeOut;
 double startMissionTime;
 double startCameraTime;
 double releaseDelayTime;
-double go_home_time = 100.0;
+double go_home_time = 105.0;
 
 bool start = false;
 bool moving = false;
@@ -127,8 +128,10 @@ string id;
 string cid;
 string rid;
 string id_frame = "path";
-string dock_id_frame = "dock_mov";
-string dockr_id_frame = "dock_rot";
+string dock_id_frame = "dock_mov_cake";
+string dockc_id_frame = "dock_mov_cherry";
+string dockr_id_frame = "dock_rot_cake";
+string vibrate_id_frame = "dock_vibrate";
 
 std_msgs::Int32 camColor;
 std_msgs::Int32 release;
@@ -174,7 +177,7 @@ public:
         _finishornot = nh.subscribe<std_msgs::Bool>("/robot"+to_string(robot+1)+"/is_finish", 1000, &mainProgram::nav_callback, this);
         _mission = nh.advertise<std_msgs::String>("mission"+to_string(robot), 1000);
         _donefullness = nh.subscribe<std_msgs::Int16MultiArray>("donefullness"+to_string(robot), 1000, &mainProgram::done_fullness_callback, this);
-        _myPos = nh.subscribe<nav_msgs::Odometry>("/robot"+to_string(robot+1)+"/odom", 1000, &mainProgram::myPos_callback, this);
+        _myPos = nh.subscribe<geometry_msgs::PoseWithCovarianceStamped>("/robot"+to_string(robot+1)+"/ekf_pose", 1000, &mainProgram::myPos_callback, this);
     }
 
 
@@ -202,7 +205,15 @@ public:
         }
         else if (dock == 2)
         {
+            pos.header.frame_id = dockc_id_frame;
+        }
+        else if (dock == 3)
+        {
             pos.header.frame_id = dockr_id_frame;
+        }
+        else if (dock == 4)
+        {
+            pos.header.frame_id = vibrate_id_frame;
         }
         pos.header.stamp = ros::Time::now();
         pos.pose.position.x = x;
@@ -253,9 +264,17 @@ public:
 
     void done_fullness_callback(const std_msgs::Int16MultiArray::ConstPtr &msg)
     {
-        if (doing)
+        if (hanoiing && msg->data.at(0) == 2)
         {
-            doing = false;
+            hanoiing = false;
+            ROS_WARN("Finished hanoiing!");
+        }
+        else if (doing)
+        {
+            if (msg->data.at(0) != 2)
+            {
+                doing = false;
+            }
             if (msg->data.at(0) == 1)
             {
                 mission_success = true;
@@ -265,15 +284,10 @@ public:
                     fullness[i-1] = msg->data.at(i);
                 }
             }
-            else
+            else if (msg->data.at(0) == 0)
             {
                 ROS_ERROR("Mission failed!");
             }
-        }
-        if (msg->data.at(0) == 2)
-        {
-            hanoiing = false;
-            ROS_WARN("Finished hanoiing!");
         }
     }
 
@@ -376,7 +390,7 @@ public:
         }
     }
 
-    void myPos_callback(const nav_msgs::Odometry::ConstPtr &msg)
+    void myPos_callback(const geometry_msgs::PoseWithCovarianceStamped::ConstPtr &msg)
     {
         myPos_x = msg->pose.pose.position.x;
         myPos_y = msg->pose.pose.position.y;
@@ -434,7 +448,7 @@ public:
 
     // locate
     ros::Publisher _obstacles = nh.advertise<geometry_msgs::PoseArray>("obstacles", 1000);
-    ros::Subscriber _myPos = nh.subscribe<nav_msgs::Odometry>("/robot"+to_string(robot+1)+"/odom", 1000, &mainProgram::myPos_callback, this);
+    ros::Subscriber _myPos = nh.subscribe<geometry_msgs::PoseWithCovarianceStamped>("/robot"+to_string(robot+1)+"/ekf_pose", 1000, &mainProgram::myPos_callback, this);
     ros::Subscriber _enemiesPos = nh.subscribe<geometry_msgs::PoseStamped>("enemiesPos", 1000, &mainProgram::enemiesPos_callback, this);
 };
 
@@ -533,7 +547,7 @@ int main(int argc, char **argv)
                 }
                 printOnce = true;
 
-                if (now_Mission != HOME && now_Mission != FINISH && ros::Time::now().toSec() - initialTime.toSec() >= go_home_time+5)
+                if (now_Mission != HOME && now_Mission != FINISH && ros::Time::now().toSec() - initialTime.toSec() >= go_home_time-5)
                 {
                     missionStr.data = "d0";
                     mainClass._mission.publish(missionStr);
@@ -546,7 +560,7 @@ int main(int argc, char **argv)
                 {
                 case CAKE:
 
-                    mission_timeOut = 5;
+                    mission_timeOut = 3;
 
                     if (!mission_print)
                     {
@@ -609,8 +623,8 @@ int main(int argc, char **argv)
                                     {
                                         now_Mission = CHERRY;
                                         mission_print = false;
-                                        // missionStr.data = "h0";
-                                        // mainClass._mission.publish(missionStr);
+                                        missionStr.data = "h0";
+                                        mainClass._mission.publish(missionStr);
                                         hanoiing = true;
                                         ROS_INFO("Mission [%s] published!", missionStr.data.c_str());
                                     }
@@ -627,8 +641,8 @@ int main(int argc, char **argv)
                                         {
                                             now_Mission = CHERRY;
                                             mission_print = false;
-                                            // missionStr.data = "h0";
-                                            // mainClass._mission.publish(missionStr);
+                                            missionStr.data = "h0";
+                                            mainClass._mission.publish(missionStr);
                                             hanoiing = true;
                                             ROS_INFO("Mission [%s] published!", missionStr.data.c_str());
                                         }
@@ -708,8 +722,8 @@ int main(int argc, char **argv)
                                         {
                                             now_Mission = CHERRY;
                                             mission_print = false;
-                                            // missionStr.data = "h0";
-                                            // mainClass._mission.publish(missionStr);
+                                            missionStr.data = "h0";
+                                            mainClass._mission.publish(missionStr);
                                             hanoiing = true;
                                             ROS_INFO("Mission [%s] published!", missionStr.data.c_str());
                                         }
@@ -731,8 +745,8 @@ int main(int argc, char **argv)
                                 {
                                     now_Mission = CHERRY;
                                     mission_print = false;
-                                    // missionStr.data = "h0";
-                                    // mainClass._mission.publish(missionStr);
+                                    missionStr.data = "h0";
+                                    mainClass._mission.publish(missionStr);
                                     hanoiing = true;
                                     ROS_INFO("Mission [%s] published!", missionStr.data.c_str());
                                 }
@@ -742,7 +756,7 @@ int main(int argc, char **argv)
                     
                     case USE_CAM:
                         
-                        camera_timeOut = 5;
+                        camera_timeOut = 4;
 
                         if (!got_cake_picked)
                         {
@@ -1011,7 +1025,7 @@ int main(int argc, char **argv)
                 
                 case CHERRY:
                     
-                    mission_timeOut = 10;
+                    mission_timeOut = 3;
 
                     if (!mission_print)
                     {
@@ -1043,7 +1057,14 @@ int main(int argc, char **argv)
                                         {
                                             for (int i = 0;i < 2;i++)
                                             {
-                                                mainClass.poseStamped_set(i%2, cherry_picked[i], srv.response.picked.poses[i].position.x, srv.response.picked.poses[i].position.y, srv.response.picked.poses[i].orientation.z, srv.response.picked.poses[i].orientation.w);
+                                                if (i % 2 == 0)
+                                                {
+                                                    mainClass.poseStamped_set(0, cherry_picked[i], srv.response.picked.poses[i].position.x, srv.response.picked.poses[i].position.y, srv.response.picked.poses[i].orientation.z, srv.response.picked.poses[i].orientation.w);
+                                                }
+                                                else
+                                                {
+                                                    mainClass.poseStamped_set(2, cherry_picked[i], srv.response.picked.poses[i].position.x, srv.response.picked.poses[i].position.y, srv.response.picked.poses[i].orientation.z, srv.response.picked.poses[i].orientation.w);
+                                                }
                                             }
                                         }
                                         else
@@ -1212,7 +1233,7 @@ int main(int argc, char **argv)
                                 basketNum++;
                                 if (basketNum == 1)
                                 {
-                                    mainClass.poseStamped_set(1, somewhere, 0.17, basket_point[side].pose.position.y, 1, 0);
+                                    mainClass.poseStamped_set(1, somewhere, 0.16, basket_point[side].pose.position.y, 1, 0);
                                     mainClass._where2go.publish(somewhere);
                                     ROS_INFO("Heading over to x:[%.3f] y:[%.3f] ang[%.1f]", somewhere.pose.position.x, somewhere.pose.position.y, mainClass.q2e(0, 0, somewhere.pose.orientation.z, somewhere.pose.orientation.y));
                                     moving = true;
@@ -1221,6 +1242,8 @@ int main(int argc, char **argv)
                                 {
                                     missionStr.data = "u0";
                                     mainClass._mission.publish(missionStr);
+                                    // mainClass.poseStamped_set(4, somewhere, 0.16, basket_point[side].pose.position.y, 1, 0);
+                                    // mainClass._where2go.publish(somewhere);
                                     ROS_INFO("Mission [%s] published!", missionStr.data.c_str());
                                     doing = true;
                                     startMissionTime = ros::Time::now().toSec();
@@ -1252,7 +1275,7 @@ int main(int argc, char **argv)
 
                 case RELEASE:
                     
-                    mission_timeOut = 10;
+                    mission_timeOut = 4;
 
                     if (!mission_print)
                     {
@@ -1268,17 +1291,25 @@ int main(int argc, char **argv)
                     }
                     else if (hanoiing)
                     {
+                        if (ros::Time::now().toSec() - initialTime.toSec() >= 72 && !going_home)
+                        {
+                            ROS_WARN("Hanoiing over time !!");
+                            hanoiing = false;
+                        }
                         if (release.data == 0 && !somewhere_once)
                         {
+                            release.data = robot+1;
+                            mainClass._release.publish(release);
                             home_num = 0;
                             mainClass.poseStamped_set(0, somewhere, 2.775, 1.775, 0, 1);
                             mainClass._where2go.publish(somewhere);
                             ROS_INFO("Heading over to x:[%.3f] y:[%.3f] ang:[%.1f]", somewhere.pose.position.x, somewhere.pose.position.y, mainClass.q2e(0, 0, somewhere.pose.orientation.z, somewhere.pose.orientation.w));
                             somewhere_once = true;
                         }
-                        else if (release.data != 0)
+                        else if (release.data != 0 && !somewhere_once)
                         {
                             home_num = 1;
+                            somewhere_once = true;
                         }
                         if (arrived)
                         {
@@ -1305,8 +1336,6 @@ int main(int argc, char **argv)
                         }
                         else if (release.data == 0 || release.data == robot+1)
                         {
-                            release.data = robot+1;
-                            mainClass._release.publish(release);
                             rsrv.request.num = 0;
                             if (mainClass._release_client.call(rsrv))
                             {
@@ -1477,8 +1506,6 @@ int main(int argc, char **argv)
                     }
                     else if (!got_steal_cake)
                     {
-                        // now_Mission = HOME;
-                        // mission_print = false;
                         if (mainClass._steal_client.call(ssrv))
                         {
                             if (ssrv.response.picked.header.frame_id != "")
