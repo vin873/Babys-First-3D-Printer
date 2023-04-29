@@ -1233,7 +1233,7 @@ int main(int argc, char **argv)
                                 basketNum++;
                                 if (basketNum == 1)
                                 {
-                                    mainClass.poseStamped_set(1, somewhere, 0.16, basket_point[side].pose.position.y, 1, 0);
+                                    mainClass.poseStamped_set(1, somewhere, 0.21, basket_point[side].pose.position.y, 1, 0);
                                     mainClass._where2go.publish(somewhere);
                                     ROS_INFO("Heading over to x:[%.3f] y:[%.3f] ang[%.1f]", somewhere.pose.position.x, somewhere.pose.position.y, mainClass.q2e(0, 0, somewhere.pose.orientation.z, somewhere.pose.orientation.y));
                                     moving = true;

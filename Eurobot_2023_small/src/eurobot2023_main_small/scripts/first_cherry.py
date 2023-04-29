@@ -13,7 +13,7 @@ import numpy as np
 from scipy.spatial.distance import euclidean
 from eurobot2023_main_small.srv import *
 
-cherries = [[[130, 840], [400, 840]], [[1350, 1800], [1650, 1800]], [[2575, 800], [2825, 800]], [[1250, 185], [1600, 185]], [[200, 1200], [400, 1200]], [[2600, 1200], [2800, 1200]]]
+cherries = [[[130, 840], [400, 840]], [[1350, 1800], [1650, 1800]], [[2575, 800], [2825, 800]], [[1230, 185], [1620, 185]], [[200, 1200], [400, 1200]], [[2600, 1200], [2800, 1200]]]
 
 # subscribe cherries’ existence
 cherryE = [1, 1, 1, 1]
@@ -76,7 +76,7 @@ def cherryPublish():
     if num == '0' or num == '1' or num == '2':
         cAng = 270
     elif num == '3' or num == '4' or num == '5':
-        cAng = 90
+        cAng = 180
     else:
         cAng = 0
 
