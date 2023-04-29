@@ -16,11 +16,17 @@ import math
 from eurobot2023_main.srv import *
 
 point = [[[[2.800, 1.800, 135], [2.625, 1.625, 135], [2.725, 1.725, 265], [2.575, 1.575, 265], 4]  # B4
-        , [[0.225, 0.225, 315], [0.375, 0.375, 315], [0.225, 0.225, 85], [0.375, 0.375, 85], 0]    # B0
-        , [[2.800, 0.750, 135], [2.625, 0.575, 135], [2.725, 0.675, 265], [2.575, 0.475, 265], 3]] # B3
-        ,[[[2.800, 0.200, 225], [2.625, 0.375, 225], [2.725, 0.275, 85], [2.575, 0.425, 85], 3]    # G3
-        , [[0.225, 1.775, 45], [0.375, 1.625, 45], [0.225, 1.775, 265], [0.375, 1.625, 265], 0]    # G0
-        , [[2.800, 1.250, 225], [2.625, 1.425, 225], [2.725, 1.325, 85], [2.575, 1.525, 85], 4]]]  # G4
+        , [[2.800, 0.750, 135], [2.625, 0.575, 135], [2.725, 0.675, 265], [2.575, 0.475, 265], 3]  # B3
+        , [[1.850, 0.200, 315], [2.025, 0.375, 315], [1.900, 0.250, 85], [2.075, 0.425, 85], 2]    # B2
+        , [[1.150, 1.800, 315], [0.975, 1.625, 315], [1.075, 1.725, 85], [0.925, 1.575, 85], 1]    # B1
+        , [[0.200, 0.200, 315], [0.375, 0.375, 315], [0.250, 0.250, 85], [0.425, 0.425, 85], 0]]   # B0
+        
+        ,[[[2.800, 0.200, 225], [2.625, 0.375, 225], [2.725, 0.275, 85], [2.575, 0.425, 85], 4]    # G4
+        , [[2.800, 1.250, 225], [2.625, 1.425, 225], [2.725, 1.325, 85], [2.575, 1.525, 85], 3]    # G3
+        , [[1.850, 1.800, 225], [2.025, 1.625, 225], [1.900, 1.750, 85], [2.075, 1.575, 85], 2]    # G2
+        , [[1.150, 0.200, 225], [0.975, 0.375, 225], [1.075, 0.275, 85], [0.925, 0.425, 85], 1]    # G1
+        , [[0.200, 1.800, 45], [0.375, 1.625, 45], [0.250, 1.725, 265], [0.425, 1.575, 265], 0]]]  # G0
+        
 
 robotNum = 0
 side = 0
@@ -94,6 +100,11 @@ def listener():
 def publisher(num):
     global robotPose, ang
 
+    if num == 0:
+        sideNum = 4
+    else:
+        sideNum = num
+
     empty = -1
 
     for i in range(4):
@@ -109,24 +120,24 @@ def publisher(num):
          robotPose.header.frame_id = '13'
     elif empty == 3:
          robotPose.header.frame_id = '20'
-    robotPose.header.frame_id += str(point[side][num][4])
+    robotPose.header.frame_id += str(point[side][sideNum][4])
     robotPose.header.stamp = rospy.Time.now()
 
     for i in range(4):
         
-        ang = (point[side][num][i][2] - empty*90 + headAng) * math.pi / 180
+        ang = (point[side][sideNum][i][2] - empty*90 + headAng) * math.pi / 180
         robotAng = euler2quaternion(0, 0, ang)
     
         pose = Pose()
 
-        pose.position.x = point[side][num][i][0]
-        pose.position.y = point[side][num][i][1]
+        pose.position.x = point[side][sideNum][i][0]
+        pose.position.y = point[side][sideNum][i][1]
         pose.orientation.x = robotAng.x
         pose.orientation.y = robotAng.y
         pose.orientation.z = robotAng.z
         pose.orientation.w = robotAng.w
         robotPose.poses.append(pose)
-        # print((point[side][num][i][2] - empty*90+headAng))
+        # print((point[side][sideNum][i][2] - empty*90+headAng))
 
 if __name__=="__main__":
     try:

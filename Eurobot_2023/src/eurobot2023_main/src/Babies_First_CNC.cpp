@@ -547,7 +547,7 @@ int main(int argc, char **argv)
                 }
                 printOnce = true;
 
-                if (now_Mission != HOME && now_Mission != FINISH && ros::Time::now().toSec() - initialTime.toSec() >= go_home_time-5)
+                if (now_Mission != HOME && now_Mission != FINISH && ros::Time::now().toSec() - initialTime.toSec() >= go_home_time+5)
                 {
                     missionStr.data = "d0";
                     mainClass._mission.publish(missionStr);
@@ -1233,7 +1233,7 @@ int main(int argc, char **argv)
                                 basketNum++;
                                 if (basketNum == 1)
                                 {
-                                    mainClass.poseStamped_set(1, somewhere, 0.16, basket_point[side].pose.position.y, 1, 0);
+                                    mainClass.poseStamped_set(1, somewhere, 0.21, basket_point[side].pose.position.y, 1, 0);
                                     mainClass._where2go.publish(somewhere);
                                     ROS_INFO("Heading over to x:[%.3f] y:[%.3f] ang[%.1f]", somewhere.pose.position.x, somewhere.pose.position.y, mainClass.q2e(0, 0, somewhere.pose.orientation.z, somewhere.pose.orientation.y));
                                     moving = true;
@@ -1311,16 +1311,29 @@ int main(int argc, char **argv)
                             home_num = 1;
                             somewhere_once = true;
                         }
-                        if (arrived)
-                        {
-                            arrived = false;
-                        }
                     }
                     else if (!got_release_point && !hanoiing)
                     {
                         if (doing_mode == STEAL)
                         {
-                            rsrv.request.num = 2;
+                            for (int i = 0;i < 4;i++)
+                            {
+                                if (plates[4-i] == 0)
+                                {
+                                    rsrv.request.num = i;
+                                    break;
+                                }
+                                if (i == 4 && (plates[0] == -1 || plates[0] == 1))
+                                {
+                                    for (int i = 0;i < 5;i++)
+                                    {
+                                        if (plates[i] == -1)
+                                        {
+                                            plates[i] = 0;
+                                        }
+                                    }
+                                }
+                            }
                             if (mainClass._release_client.call(rsrv))
                             {
                                 if (rsrv.response.picked.header.frame_id != "")
@@ -1336,7 +1349,24 @@ int main(int argc, char **argv)
                         }
                         else if (release.data == 0 || release.data == robot+1)
                         {
-                            rsrv.request.num = 0;
+                            for (int i = 0;i < 4;i++)
+                            {
+                                if (plates[4-i] == 0)
+                                {
+                                    rsrv.request.num = i;
+                                    break;
+                                }
+                                if (i == 4 && (plates[0] == -1 || plates[0] == 1))
+                                {
+                                    for (int i = 0;i < 5;i++)
+                                    {
+                                        if (plates[i] == -1)
+                                        {
+                                            plates[i] = 0;
+                                        }
+                                    }
+                                }
+                            }
                             if (mainClass._release_client.call(rsrv))
                             {
                                 if (rsrv.response.picked.header.frame_id != "")
@@ -1347,13 +1377,20 @@ int main(int argc, char **argv)
                                         mainClass.poseStamped_set(i%2, release_point[i], rsrv.response.picked.poses[i].position.x, rsrv.response.picked.poses[i].position.y, rsrv.response.picked.poses[i].orientation.z, rsrv.response.picked.poses[i].orientation.w);
                                     }
                                     got_release_point = true;
+                                    for (int i = 0;i < 5;i++)
+                                    {
+                                        if (plates[i] == -1)
+                                        {
+                                            plates[i] = 0;
+                                        }
+                                    }
                                     // cout << "rid : " << rid << endl;
                                 }
                             }
                         }
                         else
                         {
-                            rsrv.request.num = 1;
+                            rsrv.request.num = 4;
                             if (mainClass._release_client.call(rsrv))
                             {
                                 if (rsrv.response.picked.header.frame_id != "")
@@ -1364,6 +1401,13 @@ int main(int argc, char **argv)
                                         mainClass.poseStamped_set(i%2, release_point[i], rsrv.response.picked.poses[i].position.x, rsrv.response.picked.poses[i].position.y, rsrv.response.picked.poses[i].orientation.z, rsrv.response.picked.poses[i].orientation.w);
                                     }
                                     got_release_point = true;
+                                    for (int i = 0;i < 5;i++)
+                                    {
+                                        if (plates[i] == -1)
+                                        {
+                                            plates[i] = 0;
+                                        }
+                                    }
                                     // cout << "rid : " << rid << endl;
                                 }
                             }
@@ -1376,6 +1420,11 @@ int main(int argc, char **argv)
                             if (route_failed)
                             {
                                 route_failed = false;
+                                if (reCake == 0)
+                                {
+                                    got_release_point = false;
+                                    plates[int(rid[2])] = -1;
+                                }
                                 if (reCake < 3)
                                 {
                                     reCake++;
@@ -1467,17 +1516,24 @@ int main(int argc, char **argv)
                                 }
                             }
                         }
+                        else if (doing && ros::Time::now().toSec() - startMissionTime >= mission_timeOut)
+                        {
+                            moving = false;
+                            doing = false;
+                            arrived = false;
+                            mission_success = false;
+                            ROS_WARN("===== Mission [%s] overtime! =====", missionStr.data.c_str());
+                            if (reCake < 3)
+                            {
+                                reCake++;
+                            }
+                            else
+                            {
+                                now_Mission = STEAL;
+                                mission_print = false;
+                            }
+                        } 
                     }
-                    else if (doing && ros::Time::now().toSec() - startMissionTime >= mission_timeOut)
-                    {
-                        moving = false;
-                        doing = false;
-                        arrived = false;
-                        mission_success = false;
-                        ROS_WARN("===== Mission [%s] overtime! =====", missionStr.data.c_str());
-                        now_Mission = STEAL;
-                        mission_print = false;
-                    } 
                     break;
 
                 case STEAL:
@@ -1592,6 +1648,7 @@ int main(int argc, char **argv)
                             {
                                 home_num = robot;
                             }
+                            mainClass.poseStamped_set(0, home[side][home_num], home[side][home_num].pose.position.x, home[side][home_num].pose.position.y, myOri_z, myOri_w);
                             mainClass._where2go.publish(home[side][home_num]);
                             ROS_INFO("Heading over to x:[%.3f] y:[%.3f] ang:[%.1f]", home[side][home_num].pose.position.x, home[side][home_num].pose.position.y, mainClass.q2e(0, 0, home[side][home_num].pose.orientation.z, home[side][home_num].pose.orientation.w));
                             moving = true;

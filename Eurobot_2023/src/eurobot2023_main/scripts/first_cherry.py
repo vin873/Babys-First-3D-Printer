@@ -11,9 +11,10 @@ from geometry_msgs.msg import PoseWithCovarianceStamped
 from geometry_msgs.msg import PoseArray
 import numpy as np
 from scipy.spatial.distance import euclidean
+from obstacle_detector.msg import Obstacles
 from eurobot2023_main.srv import *
 
-cherries = [[[130, 840], [400, 840]], [[1350, 1800], [1650, 1800]], [[2575, 800], [2825, 800]], [[1250, 185], [1600, 185]], [[200, 1200], [400, 1200]], [[2600, 1200], [2800, 1200]]]
+cherries = [[[130, 840], [400, 840]], [[1350, 1800], [1650, 1800]], [[2575, 800], [2825, 800]], [[1200, 185], [1600, 185]], [[200, 1200], [400, 1200]], [[2600, 1200], [2800, 1200]]]
 
 # subscribe cherries’ existence
 cherryE = [1, 1, 1, 1]
@@ -56,6 +57,21 @@ def enemiesPos2_callback(msg):
     global enemies
     enemies[1][0] = msg.pose.pose.position.x * 1000
     enemies[1][1] = msg.pose.pose.position.y * 1000
+
+def enemies_callback(msg):
+    global enemies
+    if len(msg.circles) >= 1:
+        enemies[0][0] = msg.circles[0].center.x * 1000
+        enemies[0][1] = msg.circles[0].center.y * 1000
+    else:
+        enemies[0][0] = -1
+        enemies[0][1] = -1
+    if len(msg.circles) >= 2:
+        enemies[1][0] = msg.circles[1].center.x * 1000
+        enemies[1][1] = msg.circles[1].center.y * 1000
+    else:
+        enemies[1][0] = -1
+        enemies[1][1] = -1
 
 def cherryPublish():
     global robotPose, pickedSide
@@ -174,8 +190,7 @@ def listener():
     if run_mode == 'run':
         rospy.Subscriber("/robot1/ekf_pose", PoseWithCovarianceStamped, startPos1_callback)
         rospy.Subscriber("/robot2/ekf_pose", PoseWithCovarianceStamped, startPos2_callback)
-        rospy.Subscriber("/rival1/ekf_pose", PoseWithCovarianceStamped, enemiesPos1_callback)
-        rospy.Subscriber("/rival2/ekf_pose", PoseWithCovarianceStamped, enemiesPos2_callback)
+        rospy.Subscriber("/RivalObstacle", Obstacles, enemies_callback)
     elif run_mode == 'sim':
         rospy.Subscriber("/robot1/odom", Odometry, startPos1_callback)
         rospy.Subscriber("/robot2/odom", Odometry, startPos2_callback)

@@ -88,7 +88,7 @@ def publisher(time):
     done.data = df
     print("mission callback from ultra_mission_feedback")
     rospy.sleep(time)
-    # pub.publish(done)
+    pub.publish(done)
     
 def publisher2():
     global cherry, done2
