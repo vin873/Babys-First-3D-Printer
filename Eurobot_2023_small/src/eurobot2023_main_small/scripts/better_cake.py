@@ -14,6 +14,7 @@ import math
 import numpy as np
 from scipy.spatial.distance import euclidean
 from itertools import permutations
+from obstacle_detector.msg import Obstacles
 from eurobot2023_main_small.srv import *
 
 # subscribe each cake's position
@@ -87,6 +88,21 @@ def enemiesPos2_callback(msg):
     global enemies
     enemies[1][0] = msg.pose.pose.position.x * 1000
     enemies[1][1] = msg.pose.pose.position.y * 1000
+
+def enemies_callback(msg):
+    global enemies
+    if len(msg.circles) >= 1:
+        enemies[0][0] = msg.circles[0].center.x * 1000
+        enemies[0][1] = msg.circles[0].center.y * 1000
+    else:
+        enemies[0][0] = -1
+        enemies[0][1] = -1
+    if len(msg.circles) >= 2:
+        enemies[1][0] = msg.circles[1].center.x * 1000
+        enemies[1][1] = msg.circles[1].center.y * 1000
+    else:
+        enemies[1][0] = -1
+        enemies[1][1] = -1
 
 def adjust_callback(msg):
     global adjustedNum, allCakes
@@ -407,14 +423,12 @@ def listener():
     if run_mode == 'run':
         rospy.Subscriber("/robot1/ekf_pose", PoseWithCovarianceStamped, startPos1_callback)
         rospy.Subscriber("/robot2/ekf_pose", PoseWithCovarianceStamped, startPos2_callback)
-        rospy.Subscriber("/rival1/ekf_pose", PoseWithCovarianceStamped, enemiesPos1_callback)
-        rospy.Subscriber("/rival2/ekf_pose", PoseWithCovarianceStamped, enemiesPos2_callback)
+        rospy.Subscriber("/RivalObstacle", Obstacles, enemies_callback)
     elif run_mode == 'sim':
         rospy.Subscriber("/robot1/odom", Odometry, startPos1_callback)
         rospy.Subscriber("/robot2/odom", Odometry, startPos2_callback)
         rospy.Subscriber("/rival1/odom", Odometry, enemiesPos1_callback)
         rospy.Subscriber("/rival2/odom", Odometry, enemiesPos2_callback)
-    # rospy.Subscriber("/allCakes", PoseArray, allCakes_callback)
     rospy.spin()
 
 def publisher():
@@ -507,6 +521,9 @@ def publisher():
         for i in range(3):
             if len(cakeNum.data) < 3:
                 cakeNum.data.append(-1)
+
+        while len(cakeNum.data) > 3:
+            cakeNum.data.pop()
         
         pub = rospy.Publisher('cakeNum'+str(robotNum), Int32MultiArray, queue_size=1000)
         rospy.sleep(0.3)
@@ -515,6 +532,28 @@ def publisher():
         if lastpicked != picked[robotNum]:
             print("picked", picked[robotNum], got[robotNum], cakeNum.data)
             lastpicked = picked[robotNum]
+        
+        # pub_obs = rospy.Publisher('cake_camera', PoseArray, queue_size=1000)
+        # obs_PA = PoseArray()
+        # obs_PA.header.frame_id = 'sample'
+        # obs_PA.header.stamp = rospy.Time.now()
+        # not_obs_num = []
+        # for cc in range(3):
+        #     for rp in range(2):
+        #         for pc in range(3):
+        #             if picked[rp][pc] in allCakes[cc]:
+        #                 not_obs_num.append(4*cc+allCakes[cc].index(picked[rp][pc]))
+        # # print(not_obs_num)
+        # for i in range(3):
+        #     for j in range(4):
+        #         if 4*i+j not in not_obs_num:
+        #             obs_pose = Pose()
+        #             obs_pose.position.x = allCakes[i][j][0] / 1000
+        #             obs_pose.position.y = allCakes[i][j][1] / 1000
+        #             obs_PA.poses.append(obs_pose)
+        # rospy.sleep(0.3)
+        # pub_obs.publish(obs_PA)
+
         # print(robotPose.header.frame_id)
         # print(fullness[robotNum])
         # print(outAngle[robotNum])

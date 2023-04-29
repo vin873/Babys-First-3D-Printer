@@ -60,9 +60,9 @@ def mission_callback(msg):
         df[0] = 1
         publisher(7)
 
-        df = [2, 0, 1, 1 , 1]
-        publisher(0.5)
-        df[0] = 1
+        # df = [2, 0, 1, 1 , 1]
+        # publisher(0.5)
+        # df[0] = 1
 
     elif msg.data[0] == 'f' or msg.data[0] == 'd':
         df[0] = 1
@@ -88,7 +88,7 @@ def publisher(time):
     done.data = df
     print("mission callback from ultra_mission_feedback")
     rospy.sleep(time)
-    # pub.publish(done)
+    pub.publish(done)
     
 def publisher2():
     global cherry, done2
