@@ -78,6 +78,7 @@ int cherryDelay = 1.5;
 int who_basket = -1;
 int basketNum = 0;
 int home_num = -1;
+int home_finish = -1;
 int now_Mission = CAKE;
 int now_Camera_Mode = NO_CAM;
 int now_Status = SETUP;
@@ -119,7 +120,7 @@ bool somewhere_once = false;
 bool going_home = false;
 bool cherryE[4] = {1, 1, 1, 1};
 bool fullness[4] = {0, 0, 0, 0}; // {0, 90, 180, 270}
-bool plates[5] = {0, 0, 0, 0, 0}; // x y
+bool plates[5] = {0, 0, 0, 0, 0};
 bool printOnce = false;
 bool mission_print = false;
 bool pub_delay = false;
@@ -136,7 +137,9 @@ string vibrate_id_frame = "dock_vibrate";
 std_msgs::Int32 camColor;
 std_msgs::Int32 release;
 std_msgs::Int32 basket_robot;
+std_msgs::Int32 now_home;
 std_msgs::Int32MultiArray got;
+std_msgs::Bool anotherse;
 std_msgs::Bool finish_mission;
 std_msgs::String missionStr;
 
@@ -147,7 +150,7 @@ geometry_msgs::PoseStamped eat_picked[2];
 geometry_msgs::PoseStamped cherry_picked[2];
 geometry_msgs::PoseStamped basket_point[2];
 geometry_msgs::PoseStamped release_point[4];
-geometry_msgs::PoseStamped home[2][2];
+geometry_msgs::PoseStamped home[2][8];
 
 class mainProgram
 {
@@ -163,10 +166,11 @@ public:
     {
         nh.getParam("robot", robot);
         nh.getParam("side", side);
+        _all_set_up = nh.advertise<std_msgs::Bool>("allSetUp"+to_string(robot), 1000);
         _cakeNum = nh.subscribe<std_msgs::Int32MultiArray>("cakeNum"+to_string(robot), 1000, &mainProgram::cakeNum_callback, this);
         _got_cake_color = nh.advertise<std_msgs::Int32MultiArray>("gotcake"+to_string(robot), 1000);
         _release = nh.advertise<std_msgs::Int32>("release"+to_string(robot), 1000);
-        _changeHome = nh.advertise<std_msgs::Bool>("changeHome"+to_string(robot), 1000);
+        _changeHome = nh.advertise<std_msgs::Int32>("changeHome"+to_string(robot), 1000);
         _another_release = nh.subscribe<std_msgs::Int32>("release"+to_string(!bool(robot)), 1000, &mainProgram::anothere_callback, this);
         _cake_client = nh.serviceClient<eurobot2023_main::cake>("cake"+to_string(robot));
         _cherry_client = nh.serviceClient<eurobot2023_main::cherry>("cherry"+to_string(robot));
@@ -222,6 +226,11 @@ public:
         pos.pose.orientation.y = 0.0;
         pos.pose.orientation.z = z;
         pos.pose.orientation.w = w;
+    }
+
+    void anotherse_callback(const std_msgs::Bool::ConstPtr &msg)
+    {
+        anotherse.data = true;
     }
 
     void what_color_cake_callback(const std_msgs::Int32MultiArray::ConstPtr &msg)
@@ -390,6 +399,25 @@ public:
         }
     }
 
+    void anotherch_callback(const std_msgs::Int32::ConstPtr &msg)
+    {
+        if (now_Mission == HOME)
+        {
+            if (msg->data == -1)
+            {
+                home_finish = true;
+            }
+            else
+            {
+                home_num = msg->data;
+                poseStamped_set(0, home[side][home_num], home[side][home_num].pose.position.x, home[side][home_num].pose.position.y, myOri_z, myOri_w);
+                _where2go.publish(home[side][home_num]);
+                ROS_INFO("Heading over to x:[%.3f] y:[%.3f] ang:[%.1f]", home[side][home_num].pose.position.x, home[side][home_num].pose.position.y, q2e(0, 0, home[side][home_num].pose.orientation.z, home[side][home_num].pose.orientation.w));
+                moving = true;
+            }
+        }
+    }
+
     void myPos_callback(const geometry_msgs::PoseWithCovarianceStamped::ConstPtr &msg)
     {
         myPos_x = msg->pose.pose.position.x;
@@ -409,18 +437,20 @@ public:
     ros::NodeHandle nh;
 
     // main
-    ros::Publisher _all_set_up = nh.advertise<std_msgs::Bool>("allSetUp", 1000);
+    ros::Publisher _all_set_up = nh.advertise<std_msgs::Bool>("allSetUp"+to_string(robot), 1000);
     ros::Publisher _got_cake_color = nh.advertise<std_msgs::Int32MultiArray>("gotcake"+to_string(robot), 1000);
     ros::Publisher _ibasket = nh.advertise<std_msgs::Int32>("basketornot", 1000);
     ros::Publisher _release = nh.advertise<std_msgs::Int32>("release"+to_string(robot), 1000);
     ros::Publisher _plates = nh.advertise<std_msgs::Int32MultiArray>("plates", 1000);
-    ros::Publisher _changeHome = nh.advertise<std_msgs::Bool>("changeHome"+to_string(robot), 1000);
+    ros::Publisher _changeHome = nh.advertise<std_msgs::Int32>("changeHome"+to_string(robot), 1000);
     ros::Publisher _ifinish = nh.advertise<std_msgs::Bool>("finishall", 1000);
+    ros::Subscriber _another_setup = nh.subscribe<std_msgs::Bool>("allSetUp"+to_string(!bool(robot)), 1000, &mainProgram::anotherse_callback, this);
     ros::Subscriber _cakeNum = nh.subscribe<std_msgs::Int32MultiArray>("cakeNum"+to_string(robot), 1000, &mainProgram::cakeNum_callback, this);
     ros::Subscriber _got_what_color = nh.subscribe<std_msgs::Int32MultiArray>("gotcake"+to_string(robot), 1000, &mainProgram::what_color_cake_callback, this);
     ros::Subscriber _basketornot = nh.subscribe<std_msgs::Int32>("basketornot", 1000, &mainProgram::basket_callback, this);
     ros::Subscriber _another_release = nh.subscribe<std_msgs::Int32>("release"+to_string(!bool(robot)), 1000, &mainProgram::anothere_callback, this);
     ros::Subscriber _plate_full = nh.subscribe<std_msgs::Int32MultiArray>("plates", 1000, &mainProgram::plate_callback, this);
+    ros::Subscriber _another_change = nh.subscribe<std_msgs::Int32>("change"+to_string(!bool(robot)), 1000, &mainProgram::anotherch_callback, this);
     ros::Subscriber _finishall = nh.subscribe<std_msgs::Bool>("finishall", 1000, &mainProgram::finishall_callback, this);
     ros::ServiceClient _cake_client = nh.serviceClient<eurobot2023_main::cake>("cake"+to_string(robot));
     ros::ServiceClient _cherry_client = nh.serviceClient<eurobot2023_main::cherry>("cherry"+to_string(robot));
@@ -489,17 +519,30 @@ int main(int argc, char **argv)
                     release.data = 0;
                     finish_mission.data = false;
                     
-                    std_msgs::Bool setup;
-                    setup.data = true;
-                    mainClass._all_set_up.publish(setup);
                     got.data = {0, 0, 0, 0};
 
                     mainClass.poseStamped_set(0, basket_point[0], 0.225, 0.225, 1, 0);
                     mainClass.poseStamped_set(0, basket_point[1], 0.225, 1.775, 1, 0);
                     mainClass.poseStamped_set(0, home[0][0], 1.230, 1.775, 0, 1);
                     mainClass.poseStamped_set(0, home[0][1], 0.870, 1.550, 0, 1);
+                    mainClass.poseStamped_set(0, home[0][2], 1.770, 0.225, 0, 1);
+                    mainClass.poseStamped_set(0, home[0][3], 2.130, 0.450, 0, 1);
+                    mainClass.poseStamped_set(0, home[0][4], 2.800, 0.800, 0, 1);
+                    mainClass.poseStamped_set(0, home[0][5], 2.500, 0.600, 0, 1);
+                    mainClass.poseStamped_set(0, home[0][6], 2.800, 1.800, 0, 1);
+                    mainClass.poseStamped_set(0, home[0][7], 2.500, 1.600, 0, 1);
+
                     mainClass.poseStamped_set(0, home[1][0], 1.230, 0.225, 0, 1);
                     mainClass.poseStamped_set(0, home[1][1], 0.870, 0.450, 0, 1);
+                    mainClass.poseStamped_set(0, home[1][2], 1.770, 1.775, 0, 1);
+                    mainClass.poseStamped_set(0, home[1][3], 2.130, 1.550, 0, 1);
+                    mainClass.poseStamped_set(0, home[1][4], 2.800, 1.200, 0, 1);
+                    mainClass.poseStamped_set(0, home[1][5], 2.500, 1.400, 0, 1);
+                    mainClass.poseStamped_set(0, home[1][6], 2.800, 0.200, 0, 1);
+                    mainClass.poseStamped_set(0, home[1][7], 2.500, 0.400, 0, 1);
+
+                    anotherse.data = false;
+                    mainClass._all_set_up.publish(anotherse);
                 }
                 printOnce = true;
 
@@ -1233,7 +1276,7 @@ int main(int argc, char **argv)
                                 basketNum++;
                                 if (basketNum == 1)
                                 {
-                                    mainClass.poseStamped_set(1, somewhere, 0.21, basket_point[side].pose.position.y, 1, 0);
+                                    mainClass.poseStamped_set(1, somewhere, 0.2, basket_point[side].pose.position.y, 1, 0);
                                     mainClass._where2go.publish(somewhere);
                                     ROS_INFO("Heading over to x:[%.3f] y:[%.3f] ang[%.1f]", somewhere.pose.position.x, somewhere.pose.position.y, mainClass.q2e(0, 0, somewhere.pose.orientation.z, somewhere.pose.orientation.y));
                                     moving = true;
@@ -1640,9 +1683,17 @@ int main(int argc, char **argv)
                         if (route_failed)
                         {
                             route_failed = false;
-                            std_msgs::Bool change;
-                            change.data = true;
-                            mainClass._changeHome.publish(change);
+                            home_num += 2;
+                            while (plates[home_num/2+1] == 1)
+                            {
+                                home_num += 2;
+                                if (home_num >= 8)
+                                {
+                                    break;
+                                }
+                            }
+                            now_home.data = home_num;
+                            mainClass._changeHome.publish(now_home);
                         }
                         else if (!arrived)
                         {
@@ -1650,21 +1701,34 @@ int main(int argc, char **argv)
                             {
                                 home_num = robot;
                             }
+                            while (plates[home_num/2+1] == 1)
+                            {
+                                home_num += 2;
+                                if (home_num >= 8)
+                                {
+                                    break;
+                                }
+                            }
                             mainClass.poseStamped_set(0, home[side][home_num], home[side][home_num].pose.position.x, home[side][home_num].pose.position.y, myOri_z, myOri_w);
                             mainClass._where2go.publish(home[side][home_num]);
                             ROS_INFO("Heading over to x:[%.3f] y:[%.3f] ang:[%.1f]", home[side][home_num].pose.position.x, home[side][home_num].pose.position.y, mainClass.q2e(0, 0, home[side][home_num].pose.orientation.z, home[side][home_num].pose.orientation.w));
                             moving = true;
                         }
-                        else
+                        else if (arrived)
                         {
-                            missionStr.data = "A0";
-                            mainClass._mission.publish(missionStr);
-                            ROS_INFO("Mission [%s] published!", missionStr.data.c_str());
-                            missionStr.data = "d0";
-                            mainClass._mission.publish(missionStr);
-                            ROS_INFO("Mission [%s] published!", missionStr.data.c_str());
-                            now_Status = FINISH;
-                            printOnce = false;
+                            now_home.data = -1;
+                            mainClass._changeHome.publish(now_home);
+                            if ((home_num == -1 && anotherse.data == true) || anotherse.data == false)
+                            {
+                                missionStr.data = "A0";
+                                mainClass._mission.publish(missionStr);
+                                ROS_INFO("Mission [%s] published!", missionStr.data.c_str());
+                                missionStr.data = "d0";
+                                mainClass._mission.publish(missionStr);
+                                ROS_INFO("Mission [%s] published!", missionStr.data.c_str());
+                                now_Status = FINISH;
+                                printOnce = false;
+                            }
                         }
                     }
                     break;
