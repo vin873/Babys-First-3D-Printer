@@ -93,7 +93,7 @@ def cherryPublish():
         cAng = 270
     elif num == '2':
         cAng = 180
-    elif num == '3' or num == '4':
+    elif num == '3' or num == '5':
         cAng = 90
     else:
         cAng = 0

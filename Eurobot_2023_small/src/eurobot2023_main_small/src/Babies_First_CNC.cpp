@@ -1349,6 +1349,7 @@ int main(int argc, char **argv)
                         }
                         else if (release.data == 0 || release.data == robot+1)
                         {
+                            home_num = 0;
                             for (int i = 0;i < 4;i++)
                             {
                                 if (plates[4-i] == 0)
@@ -1391,6 +1392,7 @@ int main(int argc, char **argv)
                         else
                         {
                             rsrv.request.num = 4;
+                            home_num = 1;
                             if (mainClass._release_client.call(rsrv))
                             {
                                 if (rsrv.response.picked.header.frame_id != "")
