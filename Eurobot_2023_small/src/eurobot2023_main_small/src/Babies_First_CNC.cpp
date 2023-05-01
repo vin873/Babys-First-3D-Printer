@@ -78,7 +78,7 @@ int cherryDelay = 1.5;
 int who_basket = -1;
 int basketNum = 0;
 int home_num = -1;
-int home_finish = -1;
+int pre_home = 0;
 int now_Mission = CAKE;
 int now_Camera_Mode = NO_CAM;
 int now_Status = SETUP;
@@ -167,6 +167,7 @@ public:
         nh.getParam("robot", robot);
         nh.getParam("side", side);
         _all_set_up = nh.advertise<std_msgs::Bool>("allSetUp"+to_string(robot), 1000);
+        _another_setup = nh.subscribe<std_msgs::Bool>("allSetUp"+to_string(!bool(robot)), 1000, &mainProgram::anotherse_callback, this);
         _cakeNum = nh.subscribe<std_msgs::Int32MultiArray>("cakeNum"+to_string(robot), 1000, &mainProgram::cakeNum_callback, this);
         _got_cake_color = nh.advertise<std_msgs::Int32MultiArray>("gotcake"+to_string(robot), 1000);
         _release = nh.advertise<std_msgs::Int32>("release"+to_string(robot), 1000);
@@ -178,6 +179,7 @@ public:
         _steal_client = nh.serviceClient<eurobot2023_main_small::steal>("steal"+to_string(robot));
         _eat_client = nh.serviceClient<eurobot2023_main_small::eat>("eat"+to_string(robot));
         _where2go = nh.advertise<geometry_msgs::PoseStamped>("/robot"+to_string(robot+1)+"/mission", 1000);
+        _another_change = nh.subscribe<std_msgs::Int32>("changeHome"+to_string(!bool(robot)), 1000, &mainProgram::anotherch_callback, this);
         _finishornot = nh.subscribe<std_msgs::Bool>("/robot"+to_string(robot+1)+"/is_finish", 1000, &mainProgram::nav_callback, this);
         _mission = nh.advertise<std_msgs::String>("mission"+to_string(robot), 1000);
         _donefullness = nh.subscribe<std_msgs::Int16MultiArray>("donefullness"+to_string(robot), 1000, &mainProgram::done_fullness_callback, this);
@@ -276,6 +278,10 @@ public:
         if (hanoiing && msg->data.at(0) == 2)
         {
             hanoiing = false;
+            for (int i = 1;i < 5;i++)
+            {
+                fullness[i-1] = msg->data.at(i);
+            }
             ROS_WARN("Finished hanoiing!");
         }
         else if (doing)
@@ -288,10 +294,6 @@ public:
             {
                 mission_success = true;
                 ROS_INFO("Mission finished!");
-                for (int i = 1;i < 5;i++)
-                {
-                    fullness[i-1] = msg->data.at(i);
-                }
             }
             else if (msg->data.at(0) == 0)
             {
@@ -380,7 +382,7 @@ public:
         {
             checkId = 3;
         }
-        if (now_Mission == CHERRY && got_cherry_picked && cherryE[checkId] == 0 && !doing)
+        if (now_Mission == CHERRY && got_cherry_picked && cherryE[checkId] == 0 && !doing && cherryNum == 0)
         {
             got_cherry_picked = false;
             moving = false;
@@ -405,7 +407,7 @@ public:
         {
             if (msg->data == -1)
             {
-                home_finish = true;
+                home_num = msg->data;
             }
             else
             {
@@ -414,6 +416,13 @@ public:
                 _where2go.publish(home[side][home_num]);
                 ROS_INFO("Heading over to x:[%.3f] y:[%.3f] ang:[%.1f]", home[side][home_num].pose.position.x, home[side][home_num].pose.position.y, q2e(0, 0, home[side][home_num].pose.orientation.z, home[side][home_num].pose.orientation.w));
                 moving = true;
+            }
+        }
+        else
+        {
+            if (msg->data == -1)
+            {
+                pre_home = msg->data;
             }
         }
     }
@@ -450,7 +459,7 @@ public:
     ros::Subscriber _basketornot = nh.subscribe<std_msgs::Int32>("basketornot", 1000, &mainProgram::basket_callback, this);
     ros::Subscriber _another_release = nh.subscribe<std_msgs::Int32>("release"+to_string(!bool(robot)), 1000, &mainProgram::anothere_callback, this);
     ros::Subscriber _plate_full = nh.subscribe<std_msgs::Int32MultiArray>("plates", 1000, &mainProgram::plate_callback, this);
-    ros::Subscriber _another_change = nh.subscribe<std_msgs::Int32>("change"+to_string(!bool(robot)), 1000, &mainProgram::anotherch_callback, this);
+    ros::Subscriber _another_change = nh.subscribe<std_msgs::Int32>("changeHome"+to_string(!bool(robot)), 1000, &mainProgram::anotherch_callback, this);
     ros::Subscriber _finishall = nh.subscribe<std_msgs::Bool>("finishall", 1000, &mainProgram::finishall_callback, this);
     ros::ServiceClient _cake_client = nh.serviceClient<eurobot2023_main_small::cake>("cake"+to_string(robot));
     ros::ServiceClient _cherry_client = nh.serviceClient<eurobot2023_main_small::cherry>("cherry"+to_string(robot));
@@ -590,7 +599,7 @@ int main(int argc, char **argv)
                 }
                 printOnce = true;
 
-                if (now_Mission != HOME && now_Mission != FINISH && ros::Time::now().toSec() - initialTime.toSec() >= go_home_time+5)
+                if (now_Mission != HOME && now_Mission != FINISH && ros::Time::now().toSec() - initialTime.toSec() >= go_home_time+8)
                 {
                     missionStr.data = "d0";
                     mainClass._mission.publish(missionStr);
@@ -619,7 +628,6 @@ int main(int argc, char **argv)
                         mission_success = false;
                         now_Mission = HOME;
                         ROS_WARN("===== Time to Go Home !!! =====");
-                        moving = false;
                     }
 
                     switch (now_Camera_Mode)
@@ -1276,7 +1284,7 @@ int main(int argc, char **argv)
                                 basketNum++;
                                 if (basketNum == 1)
                                 {
-                                    mainClass.poseStamped_set(1, somewhere, 0.2, basket_point[side].pose.position.y, 1, 0);
+                                    mainClass.poseStamped_set(1, somewhere, 0.18, basket_point[side].pose.position.y, 1, 0);
                                     mainClass._where2go.publish(somewhere);
                                     ROS_INFO("Heading over to x:[%.3f] y:[%.3f] ang[%.1f]", somewhere.pose.position.x, somewhere.pose.position.y, mainClass.q2e(0, 0, somewhere.pose.orientation.z, somewhere.pose.orientation.y));
                                     moving = true;
@@ -1392,6 +1400,8 @@ int main(int argc, char **argv)
                         }
                         else if (release.data == 0 || release.data == robot+1)
                         {
+                            release.data = robot+1;
+                            mainClass._release.publish(release);
                             home_num = 0;
                             for (int i = 0;i < 4;i++)
                             {
@@ -1597,7 +1607,15 @@ int main(int argc, char **argv)
                         mission_success = false;
                         now_Mission = HOME;
                         ROS_WARN("===== Time to Go Home !!! =====");
+                    }
+                    if (ros::Time::now().toSec() - initialTime.toSec() >= go_home_time-10 && !going_home)
+                    {
                         moving = false;
+                        doing = false;
+                        arrived = false;
+                        mission_success = false;
+                        now_Mission = HOME;
+                        ROS_WARN("No time to steal!");
                     }
                     else if (doing_mode == STEAL)
                     {
@@ -1718,7 +1736,11 @@ int main(int argc, char **argv)
                         {
                             now_home.data = -1;
                             mainClass._changeHome.publish(now_home);
-                            if ((home_num == -1 && anotherse.data == true) || anotherse.data == false)
+                            if (pre_home == -1)
+                            {
+                                home_num = -1;
+                            }
+                            if ((home_num == -1 && anotherse.data == true) || anotherse.data == false || ros::Time::now().toSec() - initialTime.toSec() >= go_home_time+8)
                             {
                                 missionStr.data = "A0";
                                 mainClass._mission.publish(missionStr);

@@ -58,7 +58,7 @@ def mission_callback(msg):
 
     elif msg.data[0] == 'u':
         df[0] = 1
-        publisher(7)
+        publisher(5)
 
         # df = [2, 0, 1, 1 , 1]
         # publisher(0.5)
