@@ -89,9 +89,11 @@ def cherryPublish():
     robotPose.header.frame_id = num
     robotPose.header.stamp = rospy.Time.now()
 
-    if num == '0' or num == '1' or num == '2':
+    if num == '0' or num == '1':
         cAng = 270
-    elif num == '3' or num == '4' or num == '5':
+    elif num == '2':
+        cAng = 180
+    elif num == '3' or num == '5':
         cAng = 90
     else:
         cAng = 0
@@ -219,7 +221,7 @@ def publisher():
             pickedSide[0] = where2suck(startPos[0], 0)
     
     robotPose.poses = []
-    # print(pickedSide, cherryE)
+    print(pickedSide, cherryE)
     cherryPublish()
 
 if __name__=="__main__":
