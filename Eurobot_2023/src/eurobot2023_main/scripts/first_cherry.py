@@ -14,7 +14,7 @@ from scipy.spatial.distance import euclidean
 from obstacle_detector.msg import Obstacles
 from eurobot2023_main.srv import *
 
-cherries = [[[130, 840], [400, 840]], [[1350, 1800], [1650, 1800]], [[2575, 800], [2825, 800]], [[1200, 185], [1600, 185]], [[200, 1200], [400, 1200]], [[2600, 1200], [2800, 1200]]]
+cherries = [[[130, 840], [400, 840]], [[1370, 1820], [1750, 1820]], [[2530, 835], [2830, 835]], [[1200, 185], [1600, 185]], [[180, 1180], [480, 1180]], [[2600, 1180], [2800, 1180]]]
 
 # subscribe cherries’ existence
 cherryE = [1, 1, 1, 1]
@@ -163,7 +163,7 @@ def where2suck(pos, num):
                     temp = list(cherries[2]) + list(cherries[5])
                 else:
                     temp = list(cherries[sides])
-                if (sides < 4 and cherrySide not in used) or (sides == 4 and cherries[0][0] not in used) or (sides == 5 and cherries[2][0] not in used):
+                if (sides < 4 and used != sides) or (sides == 4 and used != 0) or (sides == 5 and used != 2):
                     dis2cherry = euclidean(pos, cherrySide) - closerEnemy(temp)
                     if dis2cherry > 0 and closerEnemy(temp) <= 300:
                         continue
@@ -203,18 +203,39 @@ def listener():
 def publisher():
     # print(cherryE)
     global robotPose, used, pickedSide, tempMin
+
+    pickedSideNum = -1
+
     for robot in startPos:
         if robot != [-1, -1]:
             pickedSide[startPos.index(robot)] = where2suck(robot, startPos.index(robot))
 
     if tempMin[0] < tempMin[1]:
-        used = pickedSide[0]
+        for i in cherries:
+            if pickedSide[0][0] in i:
+                pickedSideNum = cherries.index(i)
+                break
+        if pickedSideNum < 4:
+            used = pickedSideNum
+        elif pickedSideNum == 4:
+            used = 0
+        elif pickedSideNum == 5:
+            used = 2
         if startPos[1] != [-1, -1]:
             pickedSide[1] = [[-1, -1], [-1, -1]]
             tempMin[1] = 99999
             pickedSide[1] = where2suck(startPos[1], 1)
     else:
-        used = pickedSide[1]
+        for i in cherries:
+            if pickedSide[1][0] in i:
+                pickedSideNum = cherries.index(i)
+                break
+        if pickedSideNum < 4:
+            used = pickedSideNum
+        elif pickedSideNum == 4:
+            used = 0
+        elif pickedSideNum == 5:
+            used = 2
         if startPos[0] != [-1, -1]:
             pickedSide[0] = [[-1, -1], [-1, -1]]
             tempMin[0] = 99999

@@ -49,8 +49,8 @@ minAngle = 360
 headAng = -45
 camAng = 45
 outAngle = [[0, 0, 0], [0, 0, 0]]
-dockDis = 0.240
-cakeDis = 0.085
+dockDis = 0.255
+cakeDis = 0.095
 
 robotNum = 0
 side = 0
@@ -533,26 +533,26 @@ def publisher():
             print("picked", picked[robotNum], got[robotNum], cakeNum.data)
             lastpicked = picked[robotNum]
         
-        pub_obs = rospy.Publisher('cake_camera', PoseArray, queue_size=1000)
-        obs_PA = PoseArray()
-        obs_PA.header.frame_id = 'sample'
-        obs_PA.header.stamp = rospy.Time.now()
-        not_obs_num = []
-        for cc in range(3):
-            for rp in range(2):
-                for pc in range(3):
-                    if picked[rp][pc] in allCakes[cc]:
-                        not_obs_num.append(4*cc+allCakes[cc].index(picked[rp][pc]))
-        # print(not_obs_num)
-        for i in range(3):
-            for j in range(4):
-                if 4*i+j not in not_obs_num:
-                    obs_pose = Pose()
-                    obs_pose.position.x = allCakes[i][j][0] / 1000
-                    obs_pose.position.y = allCakes[i][j][1] / 1000
-                    obs_PA.poses.append(obs_pose)
-        rospy.sleep(0.3)
-        pub_obs.publish(obs_PA)
+        # pub_obs = rospy.Publisher('cake_camera', PoseArray, queue_size=1000)
+        # obs_PA = PoseArray()
+        # obs_PA.header.frame_id = 'sample'
+        # obs_PA.header.stamp = rospy.Time.now()
+        # not_obs_num = []
+        # for cc in range(3):
+        #     for rp in range(2):
+        #         for pc in range(3):
+        #             if picked[rp][pc] in allCakes[cc]:
+        #                 not_obs_num.append(4*cc+allCakes[cc].index(picked[rp][pc]))
+        # # print(not_obs_num)
+        # for i in range(3):
+        #     for j in range(4):
+        #         if 4*i+j not in not_obs_num:
+        #             obs_pose = Pose()
+        #             obs_pose.position.x = allCakes[i][j][0] / 1000
+        #             obs_pose.position.y = allCakes[i][j][1] / 1000
+        #             obs_PA.poses.append(obs_pose)
+        # rospy.sleep(0.3)
+        # pub_obs.publish(obs_PA)
 
         # print(robotPose.header.frame_id)
         # print(fullness[robotNum])
