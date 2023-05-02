@@ -90,11 +90,13 @@ def cherryPublish():
     robotPose.header.stamp = rospy.Time.now()
 
     if num == '0' or num == '1':
-        cAng = 270
+        cAng = 274
     elif num == '2':
         cAng = 180
     elif num == '3' or num == '5':
         cAng = 90
+    elif num == '4':
+        cAng = 0
     else:
         cAng = 0
 

@@ -100,6 +100,7 @@ def listener():
 def publisher(num):
     global robotPose, ang
 
+    robotPose = PoseArray()
     empty = -1
 
     for i in range(4):

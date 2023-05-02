@@ -77,6 +77,7 @@ int cherryNum = 0;
 int cherryDelay = 1.5;
 int who_basket = -1;
 int basketNum = 0;
+int plates[5] = {0, 0, 0, 0, 0};
 int home_num = -1;
 int pre_home = 0;
 int now_Mission = CAKE;
@@ -95,6 +96,7 @@ double enemiesPos_x;
 double enemiesPos_y;
 double enemiesOri_z;
 double enemiesOri_w;
+double pub_time;
 double mission_timeOut;
 double camera_timeOut;
 double startMissionTime;
@@ -106,6 +108,10 @@ bool start = false;
 bool moving = false;
 bool doing = false;
 bool arrived = false;
+bool waitAr = false;
+bool waitSTM = false;
+bool deliveredAr = false;
+bool deliveredSTM = false;
 bool hanoiing = false;
 bool cam_pub_once = false;
 bool eatornot = false;
@@ -120,7 +126,6 @@ bool somewhere_once = false;
 bool going_home = false;
 bool cherryE[4] = {1, 1, 1, 1};
 bool fullness[4] = {0, 0, 0, 0}; // {0, 90, 180, 270}
-bool plates[5] = {0, 0, 0, 0, 0};
 bool printOnce = false;
 bool mission_print = false;
 bool pub_delay = false;
@@ -133,6 +138,7 @@ string dock_id_frame = "dock_mov_cake";
 string dockc_id_frame = "dock_mov_cherry";
 string dockr_id_frame = "dock_rot_cake";
 string vibrate_id_frame = "dock_vibrate";
+string quick_id_frame = "path_quick";
 
 std_msgs::Int32 camColor;
 std_msgs::Int32 release;
@@ -197,17 +203,52 @@ public:
     
         return yaw_z;
     }
-            
+
+    void pub_till_get(std_msgs::String &misStr)
+    {
+        ROS_INFO("Mission [%s] published!", misStr.data.c_str());
+        pub_time = ros::Time::now().toSec();
+        waitAr = true;
+        if (misStr.data.at(0) == 'b' || misStr.data.at(0) == 'y' || misStr.data.at(0) == 'p' || misStr.data.at(0) == 'h')
+        {
+            waitSTM = true;
+        }
+        while (!deliveredAr && !deliveredSTM)
+        {
+            if (misStr.data.at(0) != 'b' && misStr.data.at(0) != 'y' && misStr.data.at(0) != 'p' && misStr.data.at(0) != 'h' && deliveredAr)
+            {
+                break;
+            }
+            if (ros::Time::now().toSec() - pub_time >= 0.2)
+            {
+                _mission.publish(misStr);
+                pub_time = ros::Time::now().toSec();
+            }
+        }
+        waitAr = false;
+        waitSTM = false;
+        deliveredAr = false;
+        deliveredSTM = false;
+        ROS_INFO("Mission deliveredAr!");
+    }
+
+    void handshaker_callback(const std_msgs::String::ConstPtr &msg)
+    {
+        if (waitAr && msg->data.at(0) == missionStr.data.at(0) && msg->data.at(1) == missionStr.data.at(1))
+        {
+            deliveredAr = true;
+        }
+    }
 
     void poseStamped_set(int dock,geometry_msgs::PoseStamped &pos, float x, float y, float z, float w)
     {
-        if (dock == 1)
-        {
-            pos.header.frame_id = dock_id_frame;
-        }
-        else if (dock == 0)
+        if (dock == 0)
         {
             pos.header.frame_id = id_frame;
+        }
+        else if (dock == 1)
+        {
+            pos.header.frame_id = dock_id_frame;
         }
         else if (dock == 2)
         {
@@ -220,6 +261,10 @@ public:
         else if (dock == 4)
         {
             pos.header.frame_id = vibrate_id_frame;
+        }
+        else if (dock == 5)
+        {
+            pos.header.frame_id = quick_id_frame;
         }
         pos.header.stamp = ros::Time::now();
         pos.pose.position.x = x;
@@ -364,7 +409,7 @@ public:
         {
             cherryE[i] = msg->data.at(i);
         }
-        ROS_WARN("Cherry update!");
+        ROS_WARN("Cherry update! [%d, %d, %d, %d]", cherryE[0], cherryE[1], cherryE[2], cherryE[3]);
         int checkId;
         if (cid == "4" || cid == "0")
         {
@@ -473,6 +518,7 @@ public:
 
     // mission
     ros::Publisher _mission = nh.advertise<std_msgs::String>("mission"+to_string(robot), 1000);
+    ros::Subscriber _handshaker = nh.subscribe<std_msgs::String>("handshaker"+to_string(robot), 1000, &mainProgram::handshaker_callback, this);
     ros::Subscriber _donefullness = nh.subscribe<std_msgs::Int16MultiArray>("donefullness"+to_string(robot), 1000, &mainProgram::done_fullness_callback, this);
     ros::Subscriber _startornot = nh.subscribe<std_msgs::Bool>("startornot", 1000, &mainProgram::start_callback, this);
 
@@ -602,8 +648,7 @@ int main(int argc, char **argv)
                 if (now_Mission != HOME && now_Mission != FINISH && ros::Time::now().toSec() - initialTime.toSec() >= go_home_time+8)
                 {
                     missionStr.data = "d0";
-                    mainClass._mission.publish(missionStr);
-                    ROS_INFO("Mission [%s] published!", missionStr.data.c_str());
+                    mainClass.pub_till_get(missionStr);
                     now_Status = FINISH;
                     printOnce = false;
                 }
@@ -675,9 +720,8 @@ int main(int argc, char **argv)
                                         now_Mission = CHERRY;
                                         mission_print = false;
                                         missionStr.data = "h0";
-                                        mainClass._mission.publish(missionStr);
+                                        mainClass.pub_till_get(missionStr);
                                         hanoiing = true;
-                                        ROS_INFO("Mission [%s] published!", missionStr.data.c_str());
                                     }
                                 }
                                 else {
@@ -693,9 +737,8 @@ int main(int argc, char **argv)
                                             now_Mission = CHERRY;
                                             mission_print = false;
                                             missionStr.data = "h0";
-                                            mainClass._mission.publish(missionStr);
+                                            mainClass.pub_till_get(missionStr);
                                             hanoiing = true;
-                                            ROS_INFO("Mission [%s] published!", missionStr.data.c_str());
                                         }
                                     }
                                     else if (!arrived && !mission_success)
@@ -718,8 +761,7 @@ int main(int argc, char **argv)
                                             if (id[cakeNum+1] != '!')
                                             {
                                                 missionStr.data += id[cakeNum+1];
-                                                mainClass._mission.publish(missionStr);
-                                                ROS_INFO("Mission [%s] published!", missionStr.data.c_str());
+                                                mainClass.pub_till_get(missionStr);
                                             }
                                         }
 
@@ -748,8 +790,7 @@ int main(int argc, char **argv)
                                                 got.data.at(2) = 1;
                                             }
                                             missionStr.data.at(0) = 'c';
-                                            mainClass._mission.publish(missionStr);
-                                            ROS_INFO("Mission [%s] published!", missionStr.data.c_str());
+                                            mainClass.pub_till_get(missionStr);
                                             doing = true;
                                             startMissionTime = ros::Time::now().toSec();
                                         }
@@ -774,9 +815,8 @@ int main(int argc, char **argv)
                                             now_Mission = CHERRY;
                                             mission_print = false;
                                             missionStr.data = "h0";
-                                            mainClass._mission.publish(missionStr);
+                                            mainClass.pub_till_get(missionStr);
                                             hanoiing = true;
-                                            ROS_INFO("Mission [%s] published!", missionStr.data.c_str());
                                         }
                                     }
                                 }
@@ -797,9 +837,8 @@ int main(int argc, char **argv)
                                     now_Mission = CHERRY;
                                     mission_print = false;
                                     missionStr.data = "h0";
-                                    mainClass._mission.publish(missionStr);
+                                    mainClass.pub_till_get(missionStr);
                                     hanoiing = true;
-                                    ROS_INFO("Mission [%s] published!", missionStr.data.c_str());
                                 }
                             }
                         }
@@ -949,8 +988,7 @@ int main(int argc, char **argv)
                                             {
                                                 missionStr.data = id[cakeNum];
                                                 missionStr.data += id[cakeNum+1];
-                                                mainClass._mission.publish(missionStr);
-                                                ROS_INFO("Mission [%s] published!", missionStr.data.c_str());
+                                                mainClass.pub_till_get(missionStr);
                                             }
                                         }
                                         mainClass._where2go.publish(cake_picked[cakeNum]);
@@ -965,8 +1003,7 @@ int main(int argc, char **argv)
                                             if (cakeNum % 2 == 1)
                                             {
                                                 missionStr.data.at(0) = 'c';
-                                                mainClass._mission.publish(missionStr);
-                                                ROS_INFO("Mission [%s] published!", missionStr.data.c_str());
+                                                mainClass.pub_till_get(missionStr);
                                                 doing = true;
                                                 startMissionTime = ros::Time::now().toSec();
                                             }
@@ -1189,8 +1226,7 @@ int main(int argc, char **argv)
                                 {
                                     missionStr.data = "v0";
                                 }
-                                mainClass._mission.publish(missionStr);
-                                ROS_INFO("Mission [%s] published!", missionStr.data.c_str());
+                                mainClass.pub_till_get(missionStr);
                                 doing = true;
                                 startMissionTime = ros::Time::now().toSec();
                             }
@@ -1292,10 +1328,9 @@ int main(int argc, char **argv)
                                 else if (basketNum == 2)
                                 {
                                     missionStr.data = "u0";
-                                    mainClass._mission.publish(missionStr);
+                                    mainClass.pub_till_get(missionStr);
                                     // mainClass.poseStamped_set(4, somewhere, 0.16, basket_point[side].pose.position.y, 1, 0);
                                     // mainClass._where2go.publish(somewhere);
-                                    ROS_INFO("Mission [%s] published!", missionStr.data.c_str());
                                     doing = true;
                                     startMissionTime = ros::Time::now().toSec();
                                 }
@@ -1407,10 +1442,11 @@ int main(int argc, char **argv)
                             {
                                 if (plates[4-i] == 0)
                                 {
+                                    cout << "choose : " << i << endl;
                                     rsrv.request.num = i;
                                     break;
                                 }
-                                if (i == 4 && (plates[0] == -1 || plates[0] == 1))
+                                if (i == 3 && (plates[0] == -1 || plates[0] == 1))
                                 {
                                     for (int i = 0;i < 5;i++)
                                     {
@@ -1431,13 +1467,6 @@ int main(int argc, char **argv)
                                         mainClass.poseStamped_set(i%2, release_point[i], rsrv.response.picked.poses[i].position.x, rsrv.response.picked.poses[i].position.y, rsrv.response.picked.poses[i].orientation.z, rsrv.response.picked.poses[i].orientation.w);
                                     }
                                     got_release_point = true;
-                                    for (int i = 0;i < 5;i++)
-                                    {
-                                        if (plates[i] == -1)
-                                        {
-                                            plates[i] = 0;
-                                        }
-                                    }
                                     // cout << "rid : " << rid << endl;
                                 }
                             }
@@ -1456,13 +1485,6 @@ int main(int argc, char **argv)
                                         mainClass.poseStamped_set(i%2, release_point[i], rsrv.response.picked.poses[i].position.x, rsrv.response.picked.poses[i].position.y, rsrv.response.picked.poses[i].orientation.z, rsrv.response.picked.poses[i].orientation.w);
                                     }
                                     got_release_point = true;
-                                    for (int i = 0;i < 5;i++)
-                                    {
-                                        if (plates[i] == -1)
-                                        {
-                                            plates[i] = 0;
-                                        }
-                                    }
                                     // cout << "rid : " << rid << endl;
                                 }
                             }
@@ -1478,9 +1500,14 @@ int main(int argc, char **argv)
                                 if (reCake == 0)
                                 {
                                     got_release_point = false;
-                                    plates[int(rid[2])] = -1;
+                                    plates[int(rid[2])-48] = -1;
+                                    cout << rid << " " << int(rid[2])-48 << endl;
+                                    for (int i = 0;i < 5;i++)
+                                    {
+                                        cout << plates[i];
+                                    }
                                 }
-                                if (reCake < 3)
+                                else if (reCake < 3)
                                 {
                                     reCake++;
                                 }
@@ -1488,9 +1515,16 @@ int main(int argc, char **argv)
                                 {
                                     now_Mission = STEAL;
                                     mission_print = false;
+                                    for (int i = 0;i < 5;i++)
+                                    {
+                                        if (plates[i] == -1)
+                                        {
+                                            plates[i] = 0;
+                                        }
+                                    }
                                 }
                             }
-                            if (!arrived && !mission_success)
+                            else if (!arrived && !mission_success)
                             {
                                 mainClass._where2go.publish(release_point[reCake]);
                                 ROS_INFO("Heading over to x:[%.3f] y:[%.3f] ang:[%.1f]", release_point[reCake].pose.position.x, release_point[reCake].pose.position.y, mainClass.q2e(0, 0, release_point[reCake].pose.orientation.z, release_point[reCake].pose.orientation.w));
@@ -1508,14 +1542,13 @@ int main(int argc, char **argv)
                                     else if (reCake == 1)
                                     {
                                         missionStr.data.at(0) = 'c';
-                                        mainClass._mission.publish(missionStr);
+                                        mainClass.pub_till_get(missionStr);
                                     }
                                     else if (reCake == 2)
                                     {
                                         missionStr.data = 'o';
                                         missionStr.data += rid[1];
-                                        mainClass._mission.publish(missionStr);
-                                        ROS_INFO("Mission [%s] published!", missionStr.data.c_str());
+                                        mainClass.pub_till_get(missionStr);
                                         char mc;
                                         if (rid[1] == '3')
                                         {
@@ -1530,8 +1563,7 @@ int main(int argc, char **argv)
                                     else if (reCake == 3)
                                     {
                                         missionStr.data.at(0) = 'c';
-                                        mainClass._mission.publish(missionStr);
-                                        ROS_INFO("Mission [%s] published!", missionStr.data.c_str());
+                                        mainClass.pub_till_get(missionStr);
                                         missionStr.data.at(1) = char(int(rid[1]));
                                     }
                                     releaseDelayTime = ros::Time::now().toSec();
@@ -1543,8 +1575,7 @@ int main(int argc, char **argv)
                                     arrived = false;
                                     pub_delay = false;
                                     startMissionTime = ros::Time::now().toSec();
-                                    mainClass._mission.publish(missionStr);
-                                    ROS_INFO("Mission [%s] published!", missionStr.data.c_str());
+                                    mainClass.pub_till_get(missionStr);
                                 }
                             }
                             else if (mission_success)
@@ -1552,7 +1583,7 @@ int main(int argc, char **argv)
                                 mission_success = false;
                                 if (reCake == 1)
                                 {
-                                    plates[int(rid[2])] = 1;
+                                    plates[int(rid[2])-48] = 1;
                                     std_msgs::Int32MultiArray pA;
                                     for (int i = 0;i < 5;i++)
                                     {
@@ -1568,6 +1599,13 @@ int main(int argc, char **argv)
                                 {
                                     now_Mission = STEAL;
                                     mission_print = false;
+                                    for (int i = 0;i < 5;i++)
+                                    {
+                                        if (plates[i] == -1)
+                                        {
+                                            plates[i] = 0;
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -1586,6 +1624,13 @@ int main(int argc, char **argv)
                             {
                                 now_Mission = STEAL;
                                 mission_print = false;
+                                for (int i = 0;i < 5;i++)
+                                {
+                                    if (plates[i] == -1)
+                                    {
+                                        plates[i] = 0;
+                                    }
+                                }
                             }
                         } 
                     }
@@ -1724,6 +1769,7 @@ int main(int argc, char **argv)
                                 home_num += 2;
                                 if (home_num >= 8)
                                 {
+                                    home_num -= 2;
                                     break;
                                 }
                             }
@@ -1743,11 +1789,9 @@ int main(int argc, char **argv)
                             if ((home_num == -1 && anotherse.data == true) || anotherse.data == false || ros::Time::now().toSec() - initialTime.toSec() >= go_home_time+8)
                             {
                                 missionStr.data = "A0";
-                                mainClass._mission.publish(missionStr);
-                                ROS_INFO("Mission [%s] published!", missionStr.data.c_str());
+                                mainClass.pub_till_get(missionStr);
                                 missionStr.data = "d0";
-                                mainClass._mission.publish(missionStr);
-                                ROS_INFO("Mission [%s] published!", missionStr.data.c_str());
+                                mainClass.pub_till_get(missionStr);
                                 now_Status = FINISH;
                                 printOnce = false;
                             }
@@ -1762,8 +1806,7 @@ int main(int argc, char **argv)
                 if (!printOnce)
                 {
                     missionStr.data = "f0";
-                    mainClass._mission.publish(missionStr);
-                    ROS_INFO("Mission [%s] published!", missionStr.data.c_str());
+                    mainClass.pub_till_get(missionStr);
                     ROS_INFO("Finish all missions!");
                     ROS_INFO("Robot%d finish time : %.1f", robot+1, ros::Time::now().toSec() - initialTime.toSec());
                     if (!finish_mission.data)
