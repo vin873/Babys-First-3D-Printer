@@ -189,6 +189,8 @@ public:
         _finishornot = nh.subscribe<std_msgs::Bool>("/robot"+to_string(robot+1)+"/is_finish", 1000, &mainProgram::nav_callback, this);
         _mission = nh.advertise<std_msgs::String>("mission"+to_string(robot), 1000);
         _donefullness = nh.subscribe<std_msgs::Int16MultiArray>("donefullness"+to_string(robot), 1000, &mainProgram::done_fullness_callback, this);
+        _handshakerAr = nh.subscribe<std_msgs::String>("handshaker"+to_string(robot), 1000, &mainProgram::handshakerAr_callback, this);
+        _handshakerSTM = nh.subscribe<std_msgs::String>("handshakier"+to_string(robot), 1000, &mainProgram::handshakerSTM_callback, this);
         _myPos = nh.subscribe<geometry_msgs::PoseWithCovarianceStamped>("/robot"+to_string(robot+1)+"/ekf_pose", 1000, &mainProgram::myPos_callback, this);
     }
 
@@ -232,11 +234,19 @@ public:
         ROS_INFO("Mission deliveredAr!");
     }
 
-    void handshaker_callback(const std_msgs::String::ConstPtr &msg)
+    void handshakerAr_callback(const std_msgs::String::ConstPtr &msg)
     {
-        if (waitAr && msg->data.at(0) == missionStr.data.at(0) && msg->data.at(1) == missionStr.data.at(1))
+        if (waitAr && msg->data != "" && msg->data.at(0) == missionStr.data.at(0) && msg->data.at(1) == missionStr.data.at(1))
         {
             deliveredAr = true;
+        }
+    }
+
+    void handshakerSTM_callback(const std_msgs::String::ConstPtr &msg)
+    {   
+        if (waitSTM && msg->data != "" && msg->data.at(0) == missionStr.data.at(0) && msg->data.at(1) == missionStr.data.at(1))
+        {
+            deliveredSTM = true;
         }
     }
 
@@ -518,7 +528,8 @@ public:
 
     // mission
     ros::Publisher _mission = nh.advertise<std_msgs::String>("mission"+to_string(robot), 1000);
-    ros::Subscriber _handshaker = nh.subscribe<std_msgs::String>("handshaker"+to_string(robot), 1000, &mainProgram::handshaker_callback, this);
+    ros::Subscriber _handshakerAr = nh.subscribe<std_msgs::String>("handshaker"+to_string(robot), 1000, &mainProgram::handshakerAr_callback, this);
+    ros::Subscriber _handshakerSTM = nh.subscribe<std_msgs::String>("handshakier"+to_string(robot), 1000, &mainProgram::handshakerSTM_callback, this);
     ros::Subscriber _donefullness = nh.subscribe<std_msgs::Int16MultiArray>("donefullness"+to_string(robot), 1000, &mainProgram::done_fullness_callback, this);
     ros::Subscriber _startornot = nh.subscribe<std_msgs::Bool>("startornot", 1000, &mainProgram::start_callback, this);
 

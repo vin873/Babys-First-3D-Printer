@@ -1,12 +1,12 @@
 <launch>
 
-    <node pkg="rosserial_server" type="serial_node" name="rosserial_plate" output="screen">
-        <param name="port" value="/dev/USB0-0" />
+    <!-- <node pkg="rosserial_server" type="serial_node" name="rosserial_plate" output="screen">
+        <param name="port" value="/dev/ttyUSB0" />
         <param name="baud" value="115200" />
-    </node>
+    </node> -->
 
     <node pkg="rosserial_server" type="serial_node" name="rosserial_arm" output="screen">
-        <param name="port" value="/dev/USB0-1" />
+        <param name="port" value="/dev/ttyUSB0" />
         <param name="baud" value="115200" />
     </node>
 
