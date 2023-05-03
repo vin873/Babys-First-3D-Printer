@@ -12,6 +12,14 @@ robot = ''
 start = False
 finished = -1
 
+missionStr = String()
+
+deliveredAr = False
+waitAr = False
+deliveredSTM = False
+waitSTM = False
+pub = rospy.Publisher('/mission0', String, queue_size = 100)
+
 robotE = [1, 0]
 
 def euler2quaternion(roll, pitch, yaw):
@@ -32,6 +40,23 @@ def euler2quaternion(roll, pitch, yaw):
     qw = np.cos(roll/2) * np.cos(pitch/2) * np.cos(yaw/2) + np.sin(roll/2) * np.sin(pitch/2) * np.sin(yaw/2)
 
     return Quaternion(qx, qy, qz, qw)
+
+def pub_till_get():
+    global deliveredAr, waitAr, deliveredSTM, waitSTM
+    print("Mission [", missionStr.data, "] Published !!\n")
+    waitAr = True
+    if missionStr.data[0] == 'b' or missionStr.data[0] == 'y' or missionStr.data[0] == 'p' or missionStr.data[0] == 'h':
+        waitSTM = True
+    while (not deliveredAr or not deliveredSTM) and not rospy.is_shutdown():
+        if missionStr.data[0] != 'b' and missionStr.data[0] != 'y' and missionStr.data[0] != 'p' and missionStr.data[0] != 'h' and deliveredAr:
+            break
+        rospy.sleep(0.3)
+        pub.publish(missionStr)
+    waitAr = False
+    waitSTM = False
+    deliveredAr = False
+    deliveredSTM = False
+    print("Mission delivered!")
 
 def finish1_callback(msg):
     global finished, robot
@@ -55,31 +80,43 @@ def finish2_callback(msg):
             print("Failed !\n")
             print("======================================== \n")
 
-def mission0_feedback(msg):
-    global finished, robot
-    if robot == 1:
-        finished = int(msg.data[0])
-        if finished == 1:
-            print("Mission finished !\n")
-            print("======================================== \n")
-
-def mission1_feedback(msg):
-    global finished, robot
-    if robot == 2:
-        finished = int(msg.data[0])
-        if finished == 1:
-            print("Mission finished !\n")
-            print("======================================== \n")
-
 def start_callback(msg):
     global start
     start = msg.data
+
+def handshakerAr0_callback(msg):
+    global deliveredAr
+    if robot == '1':
+        if waitAr and msg.data != "" and msg.data[0] == missionStr.data[0] and msg.data[1] == missionStr.data[1]:
+            deliveredAr = True
+
+def handshakerAr1_callback(msg):
+    global deliveredAr
+    if robot == '2':
+        if waitAr and msg.data != "" and msg.data[0] == missionStr.data[0] and msg.data[1] == missionStr.data[1]:
+            deliveredAr = True
+
+def handshakerSTM0_callback(msg):
+    global deliveredSTM
+    if robot == '1':
+        if waitSTM and msg.data != "" and msg.data[0] == missionStr.data[0] and msg.data[1] == missionStr.data[1]:
+            deliveredSTM = True
+
+def handshakerSTM1_callback(msg):
+    global deliveredSTM
+    if robot == '2':
+        if waitSTM and msg.data != "" and msg.data[0] == missionStr.data[0] and msg.data[1] == missionStr.data[1]:
+            deliveredSTM = True
 
 def initial():
     rospy.init_node("jenlu")
     rospy.Subscriber('/startornot', Bool, start_callback)
     rospy.Subscriber('/robot1/is_finish', Bool, finish1_callback)
     rospy.Subscriber('/robot2/is_finish', Bool, finish2_callback)
+    rospy.Subscriber('handshaker0', String, handshakerAr0_callback)
+    rospy.Subscriber('handshaker1', String, handshakerAr1_callback)
+    rospy.Subscriber('handshakier0', String, handshakerSTM0_callback)
+    rospy.Subscriber('handshakier1', String, handshakerSTM1_callback)
 
 def point(m, robotNum, x, y, angle):
     global finished, robot
@@ -123,7 +160,7 @@ def point(m, robotNum, x, y, angle):
             if mode != 'v' and mode != 'V':
                 if mode != 'r' and mode != 'R':
                     if mode != 'D' and mode != 'd':
-                        print("Heading over to x :", robotPose.pose.position.x, "y :", robotPose.pose.position.x, "ang :", angle)
+                        print("Heading over to x : [", robotPose.pose.position.x, "] y : [", robotPose.pose.position.x, "] ang : [", angle, "]")
                     else:
                         print("Heading over to x :", robotPose.pose.position.x, "y :", robotPose.pose.position.x)
                 else:
@@ -137,7 +174,7 @@ def point(m, robotNum, x, y, angle):
                     break
 
 def mission(robotNum, m):
-    global finished, robot
+    global finished, robot, missionStr
 
     if not rospy.is_shutdown():
         missionStr = String()
@@ -152,42 +189,34 @@ def mission(robotNum, m):
             if missionStr.data == 'reset':
                 for i in range(4):
                     missionStr.data = 'o' + str(i)
-                    rospy.sleep(0.3)
-                    pub.publish(missionStr)
+                    pub_till_get()
                 rospy.sleep(1)
                 for i in range(4):
                     missionStr.data = 'c' + str(i)
-                    rospy.sleep(0.3)
-                    pub.publish(missionStr)
+                    pub_till_get()
             
             elif missionStr.data == 'open':
                 for i in range(4):
                     missionStr.data = 'o' + str(i)
-                    rospy.sleep(0.3)
-                    pub.publish(missionStr)
+                    pub_till_get()
             
             elif missionStr.data == 'yump':
                 for i in range(4):
                     missionStr.data = 'c' + str(i)
-                    rospy.sleep(0.3)
-                    pub.publish(missionStr)
+                    pub_till_get()
 
             elif (missionStr.data[0] == 'b' or missionStr.data[0] == 'y' or missionStr.data[0] == 'p') and len(missionStr.data) == 6:
                 ms = missionStr.data
                 for i in range(3):
                     missionStr.data = ms[2*i] + ms[2*i+1]
-                    rospy.sleep(0.3)
-                    pub.publish(missionStr)
+                    pub_till_get()
                 rospy.sleep(1)
                 for i in range(3):
                     missionStr.data = 'c' + ms[2*i+1]
-                    rospy.sleep(0.3)
-                    pub.publish(missionStr)
+                    pub_till_get()
             else:
-                rospy.sleep(0.3)
-                pub.publish(missionStr)
+                pub_till_get()
                 
-            print("Mission [", missionStr.data, "] Published !!\n")
             print("======================================== \n")
 
 def test():
@@ -233,14 +262,14 @@ def test():
     # print("Total time : %.1f"%(rospy.get_rostime().to_sec()-t))
 
     point('p', 1, 1.6, 0.185, 90)
-    mission(2, 's3')
+    mission(1, 's3')
     point('c', 1, 1.25, 0.185, 90)
-    mission(2, 'v0')
+    mission(1, 'v0')
     rospy.sleep(2)
     point('p', 1, 0.4, 0.84, 270)
-    mission(2, 's0')
+    mission(1, 's0')
     point('c', 1, 0.13, 0.84, 270)
-    mission(2, 'v0')
+    mission(1, 'v0')
     rospy.sleep(2)
     point('p', 1, 0.225, 0.225, 180)
     point('d', 1, 0.15, 0.225, 180)

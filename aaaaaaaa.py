@@ -12,25 +12,62 @@ from geometry_msgs.msg import PoseStamped
 robot = ''
 finished = True
 
-def mission0_feedback(msg):
-    global finished, robot
-    if robot == '1':
-        finished = msg.data[0]
-        if finished:
-            print("Mission finished !\n")
-            print("======================================== \n")
+missionStr = String()
 
-def mission1_feedback(msg):
-    global finished, robot
+deliveredAr = False
+waitAr = False
+deliveredSTM = False
+waitSTM = False
+pub = rospy.Publisher('/mission0', String, queue_size = 100)
+
+def pub_till_get():
+    global deliveredAr, waitAr, deliveredSTM, waitSTM
+    print("Mission published!")
+    waitAr = True
+    if missionStr.data[0] == 'b' or missionStr.data[0] == 'y' or missionStr.data[0] == 'p' or missionStr.data[0] == 'h':
+        waitSTM = True
+    while (not deliveredAr or not deliveredSTM) and not rospy.is_shutdown():
+        if missionStr.data[0] != 'b' and missionStr.data[0] != 'y' and missionStr.data[0] != 'p' and missionStr.data[0] != 'h' and deliveredAr:
+            break
+        rospy.sleep(0.3)
+        pub.publish(missionStr)
+    waitAr = False
+    waitSTM = False
+    deliveredAr = False
+    deliveredSTM = False
+    print("Mission delivered!")
+
+def handshakerAr0_callback(msg):
+    global deliveredAr
+    if robot == '1':
+        if waitAr and msg.data != "" and msg.data[0] == missionStr.data[0] and msg.data[1] == missionStr.data[1]:
+            deliveredAr = True
+
+def handshakerAr1_callback(msg):
+    global deliveredAr
     if robot == '2':
-        finished = msg.data[0]
-        if finished:
-            print("Mission finished !\n")
-            print("======================================== \n")
+        if waitAr and msg.data != "" and msg.data[0] == missionStr.data[0] and msg.data[1] == missionStr.data[1]:
+            deliveredAr = True
+
+def handshakerSTM0_callback(msg):
+    global deliveredSTM
+    if robot == '1':
+        if waitSTM and msg.data != "" and msg.data[0] == missionStr.data[0] and msg.data[1] == missionStr.data[1]:
+            deliveredSTM = True
+
+def handshakerSTM1_callback(msg):
+    global deliveredSTM
+    if robot == '2':
+        if waitSTM and msg.data != "" and msg.data[0] == missionStr.data[0] and msg.data[1] == missionStr.data[1]:
+            deliveredSTM = True
 
 def publisher():
-    global finished, robot
+    global finished, robot, pub, missionStr
     rospy.init_node("aaaaaaaa")
+    rospy.Subscriber('handshaker0', String, handshakerAr0_callback)
+    rospy.Subscriber('handshaker1', String, handshakerAr1_callback)
+    rospy.Subscriber('handshakier0', String, handshakerSTM0_callback)
+    rospy.Subscriber('handshakier1', String, handshakerSTM1_callback)
 
     missionStr = String()
 
@@ -50,46 +87,39 @@ def publisher():
             if missionStr.data == 'reset':
                 for i in range(4):
                     missionStr.data = 'o' + str(i)
-                    rospy.sleep(0.3)
-                    pub.publish(missionStr)
+                    pub_till_get()
                 rospy.sleep(1)
                 for i in range(4):
                     missionStr.data = 'c' + str(i)
-                    rospy.sleep(0.3)
-                    pub.publish(missionStr)
+                    pub_till_get()
             
             elif missionStr.data == 'open':
                 for i in range(4):
                     missionStr.data = 'o' + str(i)
-                    rospy.sleep(0.3)
-                    pub.publish(missionStr)
+                    pub_till_get()
             
             elif missionStr.data == 'yump':
                 for i in range(4):
                     missionStr.data = 'c' + str(i)
-                    rospy.sleep(0.3)
-                    pub.publish(missionStr)
+                    pub_till_get()
 
             elif (missionStr.data[0] == 'b' or missionStr.data[0] == 'y' or missionStr.data[0] == 'p') and len(missionStr.data) == 6:
                 ms = missionStr.data
                 for i in range(3):
                     missionStr.data = ms[2*i] + ms[2*i+1]
-                    rospy.sleep(0.3)
-                    pub.publish(missionStr)
+                    pub_till_get()
                 rospy.sleep(1)
                 for i in range(3):
                     missionStr.data = 'c' + ms[2*i+1]
-                    rospy.sleep(0.3)
-                    pub.publish(missionStr)
+                    pub_till_get()
 
             elif missionStr.data[0] != 'b' and missionStr.data[0] != 'y' and missionStr.data[0] != 'p' and missionStr.data[0] != 'c' and missionStr.data[0] != 'o' and missionStr.data[0] != 'h' and missionStr.data[0] != 's' and missionStr.data[0] != 'v' and missionStr.data[0] != 'u' and missionStr.data[0] != 'd' and missionStr.data[0] != 'f':
                 print("Input error !!\n")
                 print("======================================== \n")
                 continue
             else:
-                pub.publish(missionStr)
+                pub_till_get()
                 
-            print("Mission Published !!\n")
             print("======================================== \n")
 
         rospy.sleep(1)
