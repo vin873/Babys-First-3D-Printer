@@ -76,7 +76,7 @@ open new terminal
 
 2. roslaunch navigation_run hub.launch --> 機構2個ST
 
-3. roslaunch navigation_run run_robot2.launch --> Lidar, 底盤ST --> 成功顯示黃色beacaon distance / geometry error(需開rviz使用2D Pose Estimate調整到正確初始位置，可看牆壁方向/rviz_sim.rviz則要「第一個」2D Pose Estimate)
+3. roslaunch navigation_run run_robot2.launch --> Lidar, 底盤ST --> 成功顯示黃色beacon distance / geometry error(需開rviz使用2D Pose Estimate調整到正確初始位置，可看牆壁方向/rviz_sim.rviz則要「第一個」2D Pose Estimate)
 
 4. (本機)roslaunch navigation_run open_rviz.launch --> launch內rviz檔案改成rviz2.rviz (或rviz_sim.rviz，但要左側逐個調topic)
 
