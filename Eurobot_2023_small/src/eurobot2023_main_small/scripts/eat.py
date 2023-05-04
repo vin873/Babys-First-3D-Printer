@@ -248,7 +248,7 @@ def listener():
     rospy.init_node("eat")
     robotNum = rospy.get_param('robot')
     run_mode = rospy.get_param('run_mode')
-    rospy.Subscriber("/onRobot/relative_where", Point, camera_callback)
+    rospy.Subscriber("/robot"+str(robotNum+1)+"/onRobot/relative_where", Point, camera_callback)
     rospy.Subscriber("/robot"+str(robotNum+1)+"/is_finish", Bool, finish_callback)
     rospy.Subscriber('donefullness'+str(robotNum), Int16MultiArray, full_callback)
     rospy.Service('eat'+str(robotNum), eat, handle_eat)

@@ -31,7 +31,7 @@ camCakes = PoseArray()
 plumpCakes = [-1, -1,"", [-1, -1]]
 minAngle = 360
 headAng = -45
-camAng = 45
+camAng = 90
 stealDis = 240
 
 robotNum = 0
