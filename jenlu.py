@@ -43,20 +43,22 @@ def euler2quaternion(roll, pitch, yaw):
 
 def pub_till_get():
     global deliveredAr, waitAr, deliveredSTM, waitSTM
-    print("Mission [", missionStr.data, "] Published !!\n")
-    waitAr = True
-    if missionStr.data[0] == 'b' or missionStr.data[0] == 'y' or missionStr.data[0] == 'p' or missionStr.data[0] == 'h':
-        waitSTM = True
-    while (not deliveredAr or not deliveredSTM) and not rospy.is_shutdown():
-        if missionStr.data[0] != 'b' and missionStr.data[0] != 'y' and missionStr.data[0] != 'p' and missionStr.data[0] != 'h' and deliveredAr:
-            break
-        rospy.sleep(0.3)
-        pub.publish(missionStr)
-    waitAr = False
-    waitSTM = False
-    deliveredAr = False
-    deliveredSTM = False
-    print("Mission delivered!")
+    rospy.sleep(0.3)
+    pub.publish(missionStr)
+    rospy.loginfo("Mission published!")
+    # waitAr = True
+    # if missionStr.data[0] == 'b' or missionStr.data[0] == 'y' or missionStr.data[0] == 'p' or missionStr.data[0] == 'h':
+    #     waitSTM = True
+    # while (not deliveredAr or not deliveredSTM) and not rospy.is_shutdown():
+    #     if missionStr.data[0] != 'b' and missionStr.data[0] != 'y' and missionStr.data[0] != 'p' and missionStr.data[0] != 'h' and deliveredAr:
+    #         break
+    #     rospy.sleep(0.3)
+    #     pub.publish(missionStr)
+    # waitAr = False
+    # waitSTM = False
+    # deliveredAr = False
+    # deliveredSTM = False
+    # rospy.loginfo("Mission delivered!")
 
 def finish1_callback(msg):
     global finished, robot

@@ -78,15 +78,17 @@ def publisher():
                 print("Shut down !!")
                 break
             if mode == 'p' or mode == 'P':
-                robotPose.header.frame_id = 'path'
+                robotPose.header.frame_id = 'path_10'
             elif mode == 'd' or mode == 'D':
-                robotPose.header.frame_id = 'dock_mov_cake'
+                robotPose.header.frame_id = 'dock_5_mov_cake'
             elif mode == 'c' or mode == 'C':
-                robotPose.header.frame_id = 'dock_mov_cherry'
+                robotPose.header.frame_id = 'dock_5_mov_cherry'
             elif mode == 'r' or mode == 'R':
-                robotPose.header.frame_id = 'dock_rot'
+                robotPose.header.frame_id = 'dock_5_rot'
             elif mode == 'v' or mode == 'V':
-                robotPose.header.frame_id = 'dock_vibrate'
+                robotPose.header.frame_id = 'dock_5_vibrate'
+            elif mode == 'q' or mode == 'Q':
+                robotPose.header.frame_id = 'path_2'
             
             else:
                 print("Input error !!\n")
