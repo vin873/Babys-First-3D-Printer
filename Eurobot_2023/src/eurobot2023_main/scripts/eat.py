@@ -280,7 +280,7 @@ def publisher(color):
             robotPublish(color)
         cameraPos = [-1, -1]
     else:
-        if startPos != [-1, -1] and camMode == -1:
+        if startPos != [-1, -1] and camMode == -2:
             robotPose.poses=[]
             robotPose.header.frame_id = ''
             robotRotate()

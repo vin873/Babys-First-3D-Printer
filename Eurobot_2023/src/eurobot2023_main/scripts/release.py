@@ -101,12 +101,21 @@ def publisher(num):
     global robotPose, ang
 
     robotPose = PoseArray()
-    empty = -1
+    empty = 0
 
-    for i in range(4):
-        if fullness[i] == 0:
-            empty = i
-            break
+    if num >= 4:
+        num -= 4
+        for i in range(4):
+            if fullness[i] == 1:
+                empty = i+1
+                if empty == 4:
+                    empty = 0
+                break
+    else:
+        for i in range(4):
+            if fullness[i] == 0:
+                empty = i
+                break
     # print(empty)
     if empty == 0:
         robotPose.header.frame_id = '31'

@@ -133,6 +133,7 @@ bool pub_delay = false;
 string id;
 string cid;
 string rid;
+string sid;
 string id_frame = "path_10";
 string dock_id_frame = "dock_5_mov_cake";
 string dockc_id_frame = "dock_5_mov_cherry";
@@ -176,7 +177,7 @@ public:
         _another_setup = nh.subscribe<std_msgs::Bool>("allSetUp"+to_string(!bool(robot)), 1000, &mainProgram::anotherse_callback, this);
         _cakeNum = nh.subscribe<std_msgs::Int32MultiArray>("cakeNum"+to_string(robot), 1000, &mainProgram::cakeNum_callback, this);
         _got_cake_color = nh.advertise<std_msgs::Int32MultiArray>("gotcake"+to_string(robot), 1000);
-        _relative_where = nh.subscribe<geometry_msgs::Point>("/robot"+to_string(robot+1)+"onRobot/relative_where", 1000, &mainProgram::relative_callback, this);
+        _relative_where = nh.subscribe<geometry_msgs::Point>("/robot"+to_string(robot+1)+"/onRobot/relative_where", 1000, &mainProgram::relative_callback, this);
         _release = nh.advertise<std_msgs::Int32>("release"+to_string(robot), 1000);
         _changeHome = nh.advertise<std_msgs::Int32>("changeHome"+to_string(robot), 1000);
         _another_release = nh.subscribe<std_msgs::Int32>("release"+to_string(!bool(robot)), 1000, &mainProgram::anothere_callback, this);
@@ -541,7 +542,7 @@ public:
 
     // camera
     ros::Publisher _cam_which_color = nh.advertise<std_msgs::Int32>("cam_which_color", 1000);
-    ros::Subscriber _relative_where = nh.subscribe<geometry_msgs::Point>("/robot"+to_string(robot+1)+"onRobot/relative_where", 1000, &mainProgram::relative_callback, this);
+    ros::Subscriber _relative_where = nh.subscribe<geometry_msgs::Point>("/robot"+to_string(robot+1)+"/onRobot/relative_where", 1000, &mainProgram::relative_callback, this);
     ros::Subscriber _ajustCake = nh.subscribe<geometry_msgs::Point>("adjustCake", 1000, &mainProgram::cake_callback, this);
     ros::Subscriber _cherryExistence = nh.subscribe<std_msgs::Int32MultiArray>("cherryExistence", 1000, &mainProgram::cherry_callback, this);
 
@@ -913,12 +914,19 @@ int main(int argc, char **argv)
                                     }
                                     else if (id[0] == 'x')
                                     {
-                                        dockmode = 2;
+                                        dockmode = 3;
                                         is_rotate = true;
                                     }
                                     for (int i = 0;i < 2;i++)
                                     {
-                                        mainClass.poseStamped_set(dockmode, cake_picked[i], esrv.response.picked.poses[i].position.x, esrv.response.picked.poses[i].position.y, esrv.response.picked.poses[i].orientation.z, esrv.response.picked.poses[i].orientation.w);
+                                        if (i == 1 && !dockmode)
+                                        {
+                                            mainClass.poseStamped_set(1, cake_picked[i], esrv.response.picked.poses[i].position.x, esrv.response.picked.poses[i].position.y, esrv.response.picked.poses[i].orientation.z, esrv.response.picked.poses[i].orientation.w);
+                                        }
+                                        else
+                                        {
+                                            mainClass.poseStamped_set(dockmode, cake_picked[i], esrv.response.picked.poses[i].position.x, esrv.response.picked.poses[i].position.y, esrv.response.picked.poses[i].orientation.z, esrv.response.picked.poses[i].orientation.w);
+                                        }
                                     }
                                     got_cake_picked = true;
                                     cakeTime = ros::Time::now();
@@ -930,15 +938,21 @@ int main(int argc, char **argv)
                             // cout << is_rotate << "   " << relative_point << endl;
                             if (relative_point == -2 && is_rotate)
                             {
-                                mainClass.poseStamped_set(1, somewhere, myPos_x, myPos_y, myOri_z, myOri_w);
-                                mainClass._where2go.publish(somewhere);
-                                ROS_WARN("STOP!!!");
-                                arrived = false;
-                                is_rotate = false;
-                                got_cake_picked = false;
-                                cakeNum = 0;
-                                // cam_pub_once = false;
-                                moving = false;
+                                // mainClass.poseStamped_set(1, somewhere, myPos_x, myPos_y, myOri_z, myOri_w);
+                                // mainClass._where2go.publish(somewhere);
+                                // ROS_WARN("STOP!!!");
+                                // arrived = false;
+                                // is_rotate = false;
+                                // got_cake_picked = false;
+                                // cakeNum = 0;
+                                // // cam_pub_once = false;
+                                // moving = false;
+                                ROS_WARN("Saw nothing!!");
+                                now_Mission = HOME;
+                                mission_print = false;
+                                camColor.data = 0;
+                                mainClass._cam_which_color.publish(camColor);
+                                break;
                             }
                             else if (!moving && !doing)
                             {
@@ -1040,7 +1054,8 @@ int main(int argc, char **argv)
                                                 c_or_d = 1;
                                                 if (doing_mode == STEAL)
                                                 {
-                                                    now_Mission = RELEASE;
+                                                    ROS_WARN("Saw nothing!");
+                                                    now_Mission = HOME;
                                                     mission_print = false;
                                                     camColor.data = 0;
                                                     mainClass._cam_which_color.publish(camColor);
@@ -1225,6 +1240,11 @@ int main(int argc, char **argv)
                             }
                             else if (!arrived && !mission_success)
                             {
+                                if (cherryNum == 1 && (cid == "0" || cid == "2" || cid == "4" || cid == "5"))
+                                {
+                                    missionStr.data = "h1";
+                                    mainClass.pub_till_get(missionStr);
+                                }
                                 mainClass._where2go.publish(cherry_picked[cherryNum]);
                                 ROS_INFO("Heading over to x:[%.3f] y:[%.3f] ang:[%.1f]", cherry_picked[cherryNum].pose.position.x, cherry_picked[cherryNum].pose.position.y, mainClass.q2e(0, 0, cherry_picked[cherryNum].pose.orientation.z, cherry_picked[cherryNum].pose.orientation.w));
                                 moving = true;
@@ -1238,6 +1258,11 @@ int main(int argc, char **argv)
                                 }
                                 else
                                 {
+                                    if (cid == "0" || cid == "2" || cid == "4" || cid == "5")
+                                    {
+                                        missionStr.data = "h2";
+                                        mainClass.pub_till_get(missionStr);
+                                    }
                                     missionStr.data = "v0";
                                 }
                                 doing = true;
@@ -1334,13 +1359,20 @@ int main(int argc, char **argv)
                             else if (arrived)
                             {
                                 arrived = false;
-                                basketNum++;
-                                if (basketNum == 1)
+                                if (basketNum == 0)
                                 {
-                                    mainClass.poseStamped_set(1, somewhere, 0.18, basket_point[side].pose.position.y, 1, 0);
-                                    mainClass._where2go.publish(somewhere);
-                                    ROS_INFO("Heading over to x:[%.3f] y:[%.3f] ang[%.1f]", somewhere.pose.position.x, somewhere.pose.position.y, mainClass.q2e(0, 0, somewhere.pose.orientation.z, somewhere.pose.orientation.y));
-                                    moving = true;
+                                    if (hanoiing)
+                                    {
+                                        doing = true;
+                                        missionStr.data = "h1";
+                                        mainClass.pub_till_get(missionStr);
+                                        startMissionTime = ros::Time::now().toSec();
+                                    }
+                                    else
+                                    {
+                                        mission_success = true;
+                                    }
+                                    basketNum++;
                                 }
                                 else if (basketNum == 2)
                                 {
@@ -1354,11 +1386,23 @@ int main(int argc, char **argv)
                             }
                             else if (mission_success)
                             {
-                                mission_success = false;
-                                now_Mission = RELEASE;
-                                mission_print = false;
-                                basket_robot.data = -1;
-                                mainClass._ibasket.publish(basket_robot);
+                                if (basketNum == 1)
+                                {
+                                    mission_success = false;
+                                    mainClass.poseStamped_set(1, somewhere, 0.18, basket_point[side].pose.position.y, 1, 0);
+                                    mainClass._where2go.publish(somewhere);
+                                    ROS_INFO("Heading over to x:[%.3f] y:[%.3f] ang[%.1f]", somewhere.pose.position.x, somewhere.pose.position.y, mainClass.q2e(0, 0, somewhere.pose.orientation.z, somewhere.pose.orientation.y));
+                                    moving = true;
+                                    basketNum++;
+                                }
+                                else
+                                {
+                                    mission_success = false;
+                                    now_Mission = RELEASE;
+                                    mission_print = false;
+                                    basket_robot.data = -1;
+                                    mainClass._ibasket.publish(basket_robot);
+                                }
                             }
                         }
                         else if (doing && ros::Time::now().toSec() - startMissionTime >= mission_timeOut)
@@ -1383,6 +1427,11 @@ int main(int argc, char **argv)
                     if (!mission_print)
                     {
                         ROS_WARN("===== Release !!! =====");
+                        if (hanoiing)
+                        {
+                            missionStr.data = "h2";
+                            mainClass.pub_till_get(missionStr);
+                        }
                         mission_print = true;
                     }
 
@@ -1397,7 +1446,7 @@ int main(int argc, char **argv)
                     }
                     else if (hanoiing)
                     {
-                        if (ros::Time::now().toSec() - initialTime.toSec() >= 72 && !going_home)
+                        if (ros::Time::now().toSec() - initialTime.toSec() >= 78 && !going_home)
                         {
                             ROS_WARN("Hanoiing over time !!");
                             hanoiing = false;
@@ -1429,7 +1478,7 @@ int main(int argc, char **argv)
                             {
                                 if (plates[4-i] == 0)
                                 {
-                                    rsrv.request.num = i;
+                                    rsrv.request.num = 4+i;
                                     break;
                                 }
                                 if (i == 4 && (plates[0] == -1 || plates[0] == 1))
@@ -1448,7 +1497,7 @@ int main(int argc, char **argv)
                                 if (rsrv.response.picked.header.frame_id != "")
                                 {
                                     rid = rsrv.response.picked.header.frame_id;
-                                    for (int i = 0;i < 4;i++)
+                                    for (int i = 0;i < 2;i++)
                                     {
                                         if (i == 0)
                                         {
@@ -1556,9 +1605,17 @@ int main(int argc, char **argv)
                             }
                             else if (!arrived && !mission_success)
                             {
-                                mainClass._where2go.publish(release_point[reCake]);
-                                ROS_INFO("Heading over to x:[%.3f] y:[%.3f] ang:[%.1f]", release_point[reCake].pose.position.x, release_point[reCake].pose.position.y, mainClass.q2e(0, 0, release_point[reCake].pose.orientation.z, release_point[reCake].pose.orientation.w));
-                                moving = true;
+                                if (rsrv.request.num >= 4 && reCake >= 2)
+                                {
+                                    reCake = 3;
+                                    mission_success = true;
+                                }
+                                else
+                                {
+                                    mainClass._where2go.publish(release_point[reCake]);
+                                    ROS_INFO("Heading over to x:[%.3f] y:[%.3f] ang:[%.1f]", release_point[reCake].pose.position.x, release_point[reCake].pose.position.y, mainClass.q2e(0, 0, release_point[reCake].pose.orientation.z, release_point[reCake].pose.orientation.w));
+                                    moving = true;
+                                }
                             }
                             else if (arrived)
                             {
@@ -1588,7 +1645,7 @@ int main(int argc, char **argv)
                                         {
                                             mc = char(int(rid[1])+1);
                                         }
-                                        missionStr.data.at(1) = mc;
+                                        missionStr.data.at(1) = mc;   
                                     }
                                     else if (reCake == 3)
                                     {
@@ -1683,7 +1740,8 @@ int main(int argc, char **argv)
                         now_Mission = HOME;
                         ROS_WARN("===== Time to Go Home !!! =====");
                     }
-                    if (ros::Time::now().toSec() - initialTime.toSec() >= go_home_time-10 && !going_home)
+                    // if (ros::Time::now().toSec() - initialTime.toSec() >= go_home_time-10 && !going_home)
+                    if (ros::Time::now().toSec() - initialTime.toSec() >= 30 && !going_home)
                     {
                         moving = false;
                         doing = false;
@@ -1704,6 +1762,7 @@ int main(int argc, char **argv)
                         {
                             if (ssrv.response.picked.header.frame_id != "")
                             {
+                                sid = ssrv.response.picked.header.frame_id;
                                 mainClass.poseStamped_set(0, steal_picked, ssrv.response.picked.pose.position.x, ssrv.response.picked.pose.position.y, ssrv.response.picked.pose.orientation.z, ssrv.response.picked.pose.orientation.w);
                                 got_steal_cake = true;
                             }
@@ -1752,7 +1811,7 @@ int main(int argc, char **argv)
                                 arrived = false;
                                 now_Mission = CAKE;
                                 now_Camera_Mode = USE_CAM;
-                                lastCakeColor = 3;
+                                lastCakeColor = 5 - int(sid[0]) + 48;
                                 doing_mode = STEAL;
                                 got_cake_picked = false;
                                 cakeNum = 0;

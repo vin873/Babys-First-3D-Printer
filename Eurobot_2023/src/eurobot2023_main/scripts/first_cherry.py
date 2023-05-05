@@ -14,7 +14,7 @@ from scipy.spatial.distance import euclidean
 from obstacle_detector.msg import Obstacles
 from eurobot2023_main.srv import *
 
-cherries = [[[130, 840], [400, 840]], [[1370, 1820], [1750, 1820]], [[2530, 835], [2830, 835]], [[1200, 185], [1600, 185]], [[180, 1180], [480, 1180]], [[2600, 1180], [2800, 1180]]]
+cherries = [[[160, 820], [440, 820]], [[1370, 1810], [1800, 1810]], [[2530, 825], [2830, 825]], [[1150, 182], [1600, 182]], [[172, 1173], [480, 1173]], [[2550, 1175], [2840, 1175]]]
 
 # subscribe cherries’ existence
 cherryE = [1, 1, 1, 1]
