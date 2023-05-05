@@ -177,7 +177,6 @@ def listener():
     rospy.Service('steal'+str(robotNum), steal, handle_steal)
     rospy.Subscriber("cake_node/obstacle_position_array", PoseArray, plumpCakes_callback)
     rospy.Subscriber("using_steal"+str(not bool(robotNum)), Pose, used_callback)
-    publisher()
     if run_mode == 'run':
         rospy.Subscriber("/robot1/ekf_pose", PoseWithCovarianceStamped, startPos1_callback)
         rospy.Subscriber("/robot2/ekf_pose", PoseWithCovarianceStamped, startPos2_callback)
@@ -242,6 +241,8 @@ def publisher():
              if tempMinDist > euclidean(pos, (target[0], target[1])):
                 tempMinDist = euclidean(pos, (target[0], target[1]))
                 picked = list(target)
+
+    print(picked)
 
     if picked != []:
         pub = rospy.Publisher('using_steal'+str(robotNum), Pose, queue_size=1000)
