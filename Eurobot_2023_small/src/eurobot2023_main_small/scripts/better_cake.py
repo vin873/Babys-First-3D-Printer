@@ -49,8 +49,8 @@ minAngle = 360
 headAng = -45
 camAng = 90
 outAngle = [[0, 0, 0], [0, 0, 0]]
-dockDis = 0.255
-cakeDis = 0.095
+dockDis = 255
+cakeDis = 95
 
 robotNum = 0
 side = 0
@@ -125,7 +125,7 @@ def full_callback(msg):
 
 def tPoint(mode, pos, target):
     # print(pos ,target)
-    if target == [-0.001, -0.001]:
+    if target == [-1, -1]:
         return [-1, -1]
     else:
         if mode == 'd':
@@ -189,8 +189,8 @@ def robotPublish(num, color, count):
     pose = Pose()
     pt = tPoint('d', preposition, position)
     # print(pt)
-    pose.position.x = pt[0]
-    pose.position.y = pt[1]
+    pose.position.x = pt[0] * 0.001
+    pose.position.y = pt[1] * 0.001
     pose.orientation.x = quaternion.x
     pose.orientation.y = quaternion.y
     pose.orientation.z = quaternion.z
@@ -199,8 +199,8 @@ def robotPublish(num, color, count):
     
     pose2 = Pose()
     pt = tPoint('c', preposition, position)
-    pose2.position.x = pt[0]
-    pose2.position.y = pt[1]
+    pose2.position.x = pt[0] * 0.001
+    pose2.position.y = pt[1] * 0.001
     pose2.orientation.x = quaternion.x
     pose2.orientation.y = quaternion.y
     pose2.orientation.z = quaternion.z
@@ -385,13 +385,15 @@ def where2go(pos, num):
         picked[num][0], picked[num][1] = picked[num][1], picked[num][0]
 
     if picked[num]:
-        anglePos = pos
+        anglePos = list(pos)
         tempAng = list(absAng)
         tempFull[num] = list(fullness[num])
+        wherePrePos = list(pos)
         for j in range(3):
             minAngle = 360
             minAngleNum = -1
-            tAngle = (np.rad2deg(np.arctan2(picked[num][j][1] - anglePos[1], picked[num][j][0] - anglePos[0])) - tempAng[num] + 360) % 360
+            wherePrePos = list(tPoint('c', wherePrePos, picked[num][j]))
+            tAngle = (np.rad2deg(np.arctan2(picked[num][j][1] - wherePrePos[1], picked[num][j][0] - wherePrePos[0])) - tempAng[num] + 360) % 360
             tAngles = [999, 999, 999, 999]
             for i in range(4):
                 if tempFull[num][i] == 0:
@@ -486,8 +488,8 @@ def publisher():
                     robotPublish(robotNum, color, pos)
                 else:
                     if count == 0:
-                        preposition[0] = startPos[robotNum][0] * 0.001
-                        preposition[1] = startPos[robotNum][1] * 0.001
+                        preposition[0] = startPos[robotNum][0]
+                        preposition[1] = startPos[robotNum][1]
                     else:
                         preposition = list(tPoint('c', preposition, position))
                     for axis in range(2):                    
@@ -495,7 +497,7 @@ def publisher():
                             if picked[robotNum][pos] in allCakes[i]:
                                 color = i
                         cakeCheckPos = list(picked[robotNum][pos])
-                        position[axis] = picked[robotNum][pos][axis] * 0.001
+                        position[axis] = picked[robotNum][pos][axis]
                     quaternion = euler2quaternion(0, 0, outAngle[robotNum][pos] * math.pi / 180)
                     robotPublish(robotNum, color, pos)
                     count += 1
@@ -530,7 +532,7 @@ def publisher():
         pub.publish(cakeNum)
 
         if lastpicked != picked[robotNum]:
-            print("picked", picked[robotNum], got[robotNum], cakeNum.data)
+            print("picked", picked[robotNum], robotPose.header.frame_id, cakeNum.data)
             lastpicked = picked[robotNum]
         
         # pub_obs = rospy.Publisher('cake_camera', PoseArray, queue_size=1000)

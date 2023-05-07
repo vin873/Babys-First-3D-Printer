@@ -267,7 +267,7 @@ def publisher(color):
     position = [-1, -1]
     quaternion = Quaternion()
     robotPose = PoseArray()
-    rotateCount=0
+    rotateCount = 0
     if cameraPos != [-1, -1]:
         where2go(startPos)
         if startPos != [-1, -1]:

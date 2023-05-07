@@ -80,6 +80,7 @@ int basketNum = 0;
 int plates[5] = {0, 0, 0, 0, 0};
 int home_num = -1;
 int pre_home = 0;
+int resomewhere = -1;
 int now_Mission = CAKE;
 int now_Camera_Mode = NO_CAM;
 int now_Status = SETUP;
@@ -211,29 +212,29 @@ public:
 
     void pub_till_get(std_msgs::String &misStr)
     {
-        // _mission.publish(misStr);
+        _mission.publish(misStr);
         ROS_INFO("Mission [%s] published!", misStr.data.c_str());
-        waitAr = true;
-        if (misStr.data.at(0) == 'b' || misStr.data.at(0) == 'y' || misStr.data.at(0) == 'p' || misStr.data.at(0) == 'h')
-        {
-            waitSTM = true;
-        }
-        ros::Rate rated(20);
-        while ((!deliveredAr || !deliveredSTM) && ros::ok())
-        {
-            if (misStr.data.at(0) != 'b' && misStr.data.at(0) != 'y' && misStr.data.at(0) != 'p' && misStr.data.at(0) != 'h' && deliveredAr)
-            {
-                break;
-            }
-            _mission.publish(misStr);
-            ros::spinOnce();
-            rated.sleep();
-        }
-        waitAr = false;
-        waitSTM = false;
-        deliveredAr = false;
-        deliveredSTM = false;
-        ROS_INFO("Mission delivered!");
+        // waitAr = true;
+        // if (misStr.data.at(0) == 'b' || misStr.data.at(0) == 'y' || misStr.data.at(0) == 'p' || misStr.data.at(0) == 'h')
+        // {
+        //     waitSTM = true;
+        // }
+        // ros::Rate rated(20);
+        // while ((!deliveredAr || !deliveredSTM) && ros::ok())
+        // {
+        //     if (misStr.data.at(0) != 'b' && misStr.data.at(0) != 'y' && misStr.data.at(0) != 'p' && misStr.data.at(0) != 'h' && deliveredAr)
+        //     {
+        //         break;
+        //     }
+        //     _mission.publish(misStr);
+        //     ros::spinOnce();
+        //     rated.sleep();
+        // }
+        // waitAr = false;
+        // waitSTM = false;
+        // deliveredAr = false;
+        // deliveredSTM = false;
+        // ROS_INFO("Mission delivered!");
     }
 
     void handshakerAr_callback(const std_msgs::String::ConstPtr &msg)
@@ -596,8 +597,8 @@ int main(int argc, char **argv)
                     
                     got.data = {0, 0, 0, 0};
 
-                    mainClass.poseStamped_set(0, basket_point[0], 0.225, 0.225, 1, 0);
-                    mainClass.poseStamped_set(0, basket_point[1], 0.225, 1.775, 1, 0);
+                    mainClass.poseStamped_set(0, basket_point[0], 0.225, 0.21, 1, 0);
+                    mainClass.poseStamped_set(0, basket_point[1], 0.225, 1.795, 1, 0);
                     mainClass.poseStamped_set(0, home[0][0], 1.230, 1.775, 0, 1);
                     mainClass.poseStamped_set(0, home[0][1], 0.870, 1.550, 0, 1);
                     mainClass.poseStamped_set(0, home[0][2], 1.770, 0.225, 0, 1);
@@ -1178,8 +1179,8 @@ int main(int argc, char **argv)
                                         if (srv.response.picked.poses[0].position.x != cherry_picked[0].pose.position.x)
                                         {
                                             mainClass.poseStamped_set(0, cherry_picked[0], srv.response.picked.poses[0].position.x, srv.response.picked.poses[0].position.y, srv.response.picked.poses[0].orientation.z, srv.response.picked.poses[0].orientation.w);
-                                            mainClass.poseStamped_set(6, cherry_picked[1], srv.response.picked.poses[1].position.x, srv.response.picked.poses[1].position.y, srv.response.picked.poses[1].orientation.z, srv.response.picked.poses[1].orientation.w);
-                                            mainClass.poseStamped_set(2, cherry_picked[2], srv.response.picked.poses[2].position.x, srv.response.picked.poses[2].position.y, srv.response.picked.poses[2].orientation.z, srv.response.picked.poses[2].orientation.w);
+                                            mainClass.poseStamped_set(6, cherry_picked[1], srv.response.picked.poses[0].position.x, srv.response.picked.poses[0].position.y, srv.response.picked.poses[0].orientation.z, srv.response.picked.poses[0].orientation.w);
+                                            mainClass.poseStamped_set(2, cherry_picked[2], srv.response.picked.poses[1].position.x, srv.response.picked.poses[1].position.y, srv.response.picked.poses[1].orientation.z, srv.response.picked.poses[1].orientation.w);
                                         }
                                         else
                                         {
@@ -1237,11 +1238,6 @@ int main(int argc, char **argv)
                             }
                             else if (!arrived && !mission_success)
                             {
-                                if (cherryNum == 1 && (cid == "0" || cid == "2" || cid == "4" || cid == "5"))
-                                {
-                                    missionStr.data = "h1";
-                                    mainClass.pub_till_get(missionStr);
-                                }
                                 mainClass._where2go.publish(cherry_picked[cherryNum]);
                                 ROS_INFO("Heading over to x:[%.3f] y:[%.3f] ang:[%.1f]", cherry_picked[cherryNum].pose.position.x, cherry_picked[cherryNum].pose.position.y, mainClass.q2e(0, 0, cherry_picked[cherryNum].pose.orientation.z, cherry_picked[cherryNum].pose.orientation.w));
                                 moving = true;
@@ -1251,6 +1247,11 @@ int main(int argc, char **argv)
                                 arrived = false;
                                 if (cherryNum == 0)
                                 {
+                                    if (cid == "0" || cid == "2" || cid == "4" || cid == "5")
+                                    {
+                                        missionStr.data = "h1";
+                                        mainClass.pub_till_get(missionStr);
+                                    }
                                     missionStr.data = "s"+cid;
                                 }
                                 else if (cherryNum == 2)
@@ -1262,9 +1263,16 @@ int main(int argc, char **argv)
                                     }
                                     missionStr.data = "v0";
                                 }
-                                doing = true;
-                                mainClass.pub_till_get(missionStr);
-                                startMissionTime = ros::Time::now().toSec();
+                                if (cherryNum != 1)
+                                {
+                                    doing = true;
+                                    mainClass.pub_till_get(missionStr);
+                                    startMissionTime = ros::Time::now().toSec();
+                                }
+                                else if (cherryNum == 1)
+                                {
+                                    cherryNum++;
+                                }
                             }
                             else if (mission_success)
                             {
@@ -1295,7 +1303,7 @@ int main(int argc, char **argv)
 
                 case BASKET:
                     
-                    mission_timeOut = 15;
+                    mission_timeOut = 5;
 
                     if (!mission_print)
                     {
@@ -1386,7 +1394,7 @@ int main(int argc, char **argv)
                                 if (basketNum == 1)
                                 {
                                     mission_success = false;
-                                    mainClass.poseStamped_set(1, somewhere, 0.18, basket_point[side].pose.position.y, 1, 0);
+                                    mainClass.poseStamped_set(1, somewhere, 0.17, basket_point[side].pose.position.y, 1, 0);
                                     mainClass._where2go.publish(somewhere);
                                     ROS_INFO("Heading over to x:[%.3f] y:[%.3f] ang[%.1f]", somewhere.pose.position.x, somewhere.pose.position.y, mainClass.q2e(0, 0, somewhere.pose.orientation.z, somewhere.pose.orientation.y));
                                     moving = true;
@@ -1448,23 +1456,58 @@ int main(int argc, char **argv)
                             ROS_WARN("Hanoiing over time !!");
                             hanoiing = false;
                         }
-                        if (release.data == 0 && !somewhere_once)
+                        if (release.data == 0 || release.data == robot+1 && !somewhere_once)
                         {
                             release.data = robot+1;
                             mainClass._release.publish(release);
                             home_num = 0;
-                            mainClass.poseStamped_set(5, somewhere, 2.775, 1.775, 0, 1);
+                            if (resomewhere == -1)
+                            {
+                                mainClass.poseStamped_set(d, somewhere, 0.225, abs(0.21-2*side), 0, 1);
+                            }
+                            if (resomewhere == 0)
+                            {
+                                mainClass.poseStamped_set(5, somewhere, 2.775, abs(1.775-2*side), 0, 1);
+                            }
+                            else if (resomewhere == 1)
+                            {
+                                mainClass.poseStamped_set(5, somewhere, 2.775, abs(0.725-2*side), 0, 1);
+                            }
+                            else if (resomewhere == 2)
+                            {
+                                mainClass.poseStamped_set(5, somewhere, 1.875, abs(0.225-2*side), 0, 1);
+                            }
+                            else if (resomewhere == 3)
+                            {
+                                mainClass.poseStamped_set(5, somewhere, 1.125, abs(1.775-2*side), 0, 1);
+                            }
                             mainClass._where2go.publish(somewhere);
                             ROS_INFO("Heading over to x:[%.3f] y:[%.3f] ang:[%.1f]", somewhere.pose.position.x, somewhere.pose.position.y, mainClass.q2e(0, 0, somewhere.pose.orientation.z, somewhere.pose.orientation.w));
+                            moving = true;
                             somewhere_once = true;
                         }
                         else if (release.data != 0 && !somewhere_once)
                         {
                             home_num = 1;
-                            mainClass.poseStamped_set(5, somewhere, 0.225, 0.225, 0, 1);
+                            mainClass.poseStamped_set(5, somewhere, 0.225, abs(0.225-2*side), 0, 1);
                             mainClass._where2go.publish(somewhere);
                             ROS_INFO("Heading over to x:[%.3f] y:[%.3f] ang:[%.1f]", somewhere.pose.position.x, somewhere.pose.position.y, mainClass.q2e(0, 0, somewhere.pose.orientation.z, somewhere.pose.orientation.w));
                             somewhere_once = true;
+                        }
+                        if (route_failed)
+                        {
+                            route_failed = false;
+                            resomewhere++;
+                            somewhere_once = false;
+                        }
+                        else if (arrived)
+                        {
+                            arrived = false;
+                            if (resomewhere == -1)
+                            {
+                                resomewhere++;
+                                somewhere_once = false;
+                            }
                         }
                     }
                     else if (!got_release_point && !hanoiing)
@@ -1502,7 +1545,7 @@ int main(int argc, char **argv)
                                         }
                                         else
                                         {
-                                            mainClass.poseStamped_set(i%2, release_point[i], rsrv.response.picked.poses[i].position.x, rsrv.response.picked.poses[i].position.y, rsrv.response.picked.poses[i].orientation.z, rsrv.response.picked.poses[i].orientation.w);
+                                            mainClass.poseStamped_set(1, release_point[i], rsrv.response.picked.poses[i].position.x, rsrv.response.picked.poses[i].position.y, rsrv.response.picked.poses[i].orientation.z, rsrv.response.picked.poses[i].orientation.w);
                                         }
                                     }
                                     got_release_point = true;
@@ -1539,6 +1582,11 @@ int main(int argc, char **argv)
                                 {
                                     rid = rsrv.response.picked.header.frame_id;
                                     for (int i = 0;i < 4;i++)
+                                    if (i == 0)
+                                    {
+                                        mainClass.poseStamped_set(5, release_point[i], rsrv.response.picked.poses[i].position.x, rsrv.response.picked.poses[i].position.y, rsrv.response.picked.poses[i].orientation.z, rsrv.response.picked.poses[i].orientation.w);
+                                    }
+                                    else
                                     {
                                         mainClass.poseStamped_set(i%2, release_point[i], rsrv.response.picked.poses[i].position.x, rsrv.response.picked.poses[i].position.y, rsrv.response.picked.poses[i].orientation.z, rsrv.response.picked.poses[i].orientation.w);
                                     }
@@ -1558,7 +1606,14 @@ int main(int argc, char **argv)
                                     rid = rsrv.response.picked.header.frame_id;
                                     for (int i = 0;i < 4;i++)
                                     {
-                                        mainClass.poseStamped_set(i%2, release_point[i], rsrv.response.picked.poses[i].position.x, rsrv.response.picked.poses[i].position.y, rsrv.response.picked.poses[i].orientation.z, rsrv.response.picked.poses[i].orientation.w);
+                                        if (i == 0)
+                                        {
+                                            mainClass.poseStamped_set(0, release_point[i], rsrv.response.picked.poses[i].position.x, rsrv.response.picked.poses[i].position.y, rsrv.response.picked.poses[i].orientation.z, rsrv.response.picked.poses[i].orientation.w);
+                                        }
+                                        else
+                                        {
+                                            mainClass.poseStamped_set(i%2, release_point[i], rsrv.response.picked.poses[i].position.x, rsrv.response.picked.poses[i].position.y, rsrv.response.picked.poses[i].orientation.z, rsrv.response.picked.poses[i].orientation.w);
+                                        }   
                                     }
                                     got_release_point = true;
                                     // cout << "rid : " << rid << endl;
