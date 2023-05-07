@@ -70,7 +70,7 @@ def mission_callback(msg):
         elif msg.data[0] == 'u':
             df[0] = 1
             publisher3(msg)
-            publisher(5)
+            publisher(3)
 
             # df = [2, 0, 1, 1 , 1]
             # publisher(0.5)
@@ -101,7 +101,7 @@ def publisher(time):
     global df, done
     pub = rospy.Publisher('/donefullness'+str(robotNum), Int16MultiArray, queue_size=1000)
     done.data = df
-    print("mission callback from ultra_mission_feedback")
+    rospy.loginfo("mission callback from ultra_mission_feedback")
     rospy.sleep(time)
     pub.publish(done)
     
